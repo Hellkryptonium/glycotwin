@@ -1,0 +1,9 @@
+dimension,group_code,n,positive_n,negative_n,metrics_suppressed
+sex,1,224,19,205,requires >=20 positives and >=20 negatives; small cells are unstable
+sex,2,261,13,248,requires >=20 positives and >=20 negatives; small cells are unstable
+race_ethnicity,1,69,2,67,requires >=20 positives and >=20 negatives; small cells are unstable
+race_ethnicity,2,50,6,44,requires >=20 positives and >=20 negatives; small cells are unstable
+race_ethnicity,3,149,5,144,requires >=20 positives and >=20 negatives; small cells are unstable
+race_ethnicity,4,121,12,109,requires >=20 positives and >=20 negatives; small cells are unstable
+race_ethnicity,6,66,6,60,requires >=20 positives and >=20 negatives; small cells are unstable
+race_ethnicity,7,30,1,29,requires >=20 positives and >=20 negatives; small cells are unstable

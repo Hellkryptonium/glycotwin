@@ -1,0 +1,47 @@
+{
+  "experiment": 2,
+  "original_split": {
+    "method": "sklearn train_test_split over saved positional indices",
+    "test_size": 0.25012893243940176,
+    "random_state": 42,
+    "stratified": true,
+    "original_n": 1939,
+    "original_train_n": 1454,
+    "original_test_n": 485,
+    "original_test_classes": {
+      "0.0": 453,
+      "1.0": 32
+    }
+  },
+  "valid_fasting_weight_filter": {
+    "rule": "WTSAF2YR > 0",
+    "reason": "CDC GLU_J codebook assigns zero weight when no fasting lab result exists or specimen did not meet the 8 to <24 hour fasting criterion; fasting-glucose results are retained for some nonfasted participants, but using them in the fasting analysis requires reweighting.",
+    "experiment1_rows_without_positive_weight": 116,
+    "of_these_with_complete_labs_and_primary_eligibility": 116,
+    "valid_weighted_point_estimate_n_in_exp1": 1823,
+    "exp2_valid_cohort_n": 1823,
+    "exp2_train_n": 1368,
+    "exp2_train_classes": {
+      "0": 1280,
+      "1": 88
+    },
+    "exp2_test_n": 455,
+    "exp2_test_classes": {
+      "0": 428,
+      "1": 27
+    }
+  },
+  "preprocessing_audit": {
+    "preprocessor_inside_sklearn_pipeline": true,
+    "imputation_scaling_fitted_per_training_fold": true,
+    "feature_set": "full_non_laboratory",
+    "feature_set_prespecified": true,
+    "no_data_driven_feature_selection": true,
+    "threshold_selection_data": "repeated stratified out-of-fold predictions from valid-weight training participants only",
+    "test_data_used_for_threshold_or_calibration_fit": false
+  },
+  "survey_weights": {
+    "WTSAF2YR": "eligibility filter and weighted prevalence context only; not passed as an ML sample_weight",
+    "SDMVSTRA_SDMVPSU": "retained in Exp1 cohort file but not used in ordinary ML metrics or bootstrap; no design-based performance estimate"
+  }
+}

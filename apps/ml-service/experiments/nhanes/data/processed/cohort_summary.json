@@ -1,0 +1,45 @@
+{
+  "cycle": "NHANES 2017-2018",
+  "age_minimum": 20,
+  "seed": 42,
+  "flow_counts": {
+    "rows_DEMO_J": 9254,
+    "rows_DIQ_J": 8897,
+    "rows_BMX_J": 8704,
+    "rows_BPX_J": 8704,
+    "rows_GHB_J": 6401,
+    "rows_GLU_J": 3036,
+    "rows_PAQ_J": 5856,
+    "rows_DR1TOT_J": 8704,
+    "rows_DR2TOT_J": 8704,
+    "rows_SLQ_J": 6161,
+    "merged_unique_participants": 9254,
+    "raw_merged_participants": 9254,
+    "adults_20plus": 5569,
+    "adult_diagnosis_yes": 876,
+    "adult_diagnosis_no": 4517,
+    "adult_diagnosis_ambiguous_or_missing": 176,
+    "adult_no_prior_diagnosis_missing_one_or_both_labs": 2578,
+    "adult_no_prior_diagnosis_missing_hba1c": 466,
+    "adult_no_prior_diagnosis_missing_fasting_glucose": 2575,
+    "adult_no_prior_diagnosis_missing_both_labs": 463,
+    "primary_lab_eligible": 1939,
+    "primary_lab_eligible_missing_fast_subsample_weight": 116,
+    "primary_lab_cases": 129,
+    "primary_lab_controls": 1810,
+    "secondary_self_report_eligible": 5393,
+    "secondary_self_report_cases": 876,
+    "secondary_self_report_controls": 4517
+  },
+  "weighted_prevalence": {
+    "laboratory_undiagnosed_fast_subsample": {
+      "n": 1823,
+      "weighted_prevalence": 0.0402301842388834
+    },
+    "self_reported_adult_interview": {
+      "n": 5393,
+      "weighted_prevalence": 0.1176468535107622
+    },
+    "notes": "Weighted point estimates only; no Taylor-linearized standard errors/CI are calculated in this exploratory pipeline."
+  }
+}

@@ -1,0 +1,5 @@
+.message { align-items: center; border: 1px dashed var(--line); color: var(--muted-ink); display: flex; gap: 10px; justify-content: center; min-height: 120px; padding: 24px; text-align: center; }
+.error { border-color: var(--tomato); color: var(--tomato); }
+.empty { background: var(--white); }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }

@@ -1,0 +1,14 @@
+data/raw/*
+data/processed/*
+!data/processed/cohort_summary.json
+!data/processed/cohort_flow.csv
+!data/processed/cohort_flow.json
+!data/processed/feature_missingness.csv
+!data/processed/descriptive_statistics.csv
+!data/processed/categorical_distributions.csv
+!data/processed/feature_correlations.csv
+!data/processed/missingness_patterns.csv
+!data/processed/model_comparison.csv
+!data/processed/subgroup_metrics.csv
+__pycache__/
+.pytest_cache/

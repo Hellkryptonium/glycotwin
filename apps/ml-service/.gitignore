@@ -1,0 +1,4 @@
+data/raw/*.csv
+data/processed/*
+artifacts/*
+!artifacts/.gitkeep

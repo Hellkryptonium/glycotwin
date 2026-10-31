@@ -1,0 +1,82 @@
+[
+  {
+    "flow": "all merged participants",
+    "n": 9254,
+    "details": "Unique SEQN after validated left joins"
+  },
+  {
+    "flow": "adults age 20+",
+    "n": 5569,
+    "details": "RIDAGEYR >= 20"
+  },
+  {
+    "flow": "adults with DIQ010 yes",
+    "n": 876,
+    "details": "Previously diagnosed; excluded from primary undiagnosed cohort"
+  },
+  {
+    "flow": "adults with DIQ010 no",
+    "n": 4517,
+    "details": "Eligible diagnosis response"
+  },
+  {
+    "flow": "adults with ambiguous or missing DIQ010",
+    "n": 176,
+    "details": "Excluded from both target cohorts; never recoded as negative"
+  },
+  {
+    "flow": "DIQ010 no but one or both labs missing",
+    "n": 2578,
+    "details": "Excluded from primary lab composite; see module-specific missingness"
+  },
+  {
+    "flow": "DIQ010 no, missing HbA1c",
+    "n": 466,
+    "details": "Can overlap the fasting-glucose missing count"
+  },
+  {
+    "flow": "DIQ010 no, missing fasting glucose",
+    "n": 2575,
+    "details": "Fasting subsample; can overlap HbA1c missing count"
+  },
+  {
+    "flow": "DIQ010 no, both labs missing",
+    "n": 463,
+    "details": "Subset of either-lab-missing exclusions"
+  },
+  {
+    "flow": "primary complete-lab eligible",
+    "n": 1939,
+    "details": "DIQ010=2 and both LBXGH and LBXGLU observed"
+  },
+  {
+    "flow": "primary lab eligible without WTSAF2YR",
+    "n": 116,
+    "details": "Retained for unweighted model analysis; excluded from weighted prevalence denominator"
+  },
+  {
+    "flow": "primary lab cases",
+    "n": 129,
+    "details": "LBXGH >= 6.5 OR LBXGLU >= 126"
+  },
+  {
+    "flow": "primary lab controls",
+    "n": 1810,
+    "details": "Both labs observed and both below thresholds"
+  },
+  {
+    "flow": "secondary self-report eligible",
+    "n": 5393,
+    "details": "DIQ010 in {1,2}; adults only"
+  },
+  {
+    "flow": "secondary self-report cases",
+    "n": 876,
+    "details": "DIQ010=1"
+  },
+  {
+    "flow": "secondary self-report controls",
+    "n": 4517,
+    "details": "DIQ010=2"
+  }
+]

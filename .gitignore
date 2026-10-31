@@ -1,0 +1,98 @@
+﻿# Environment variables and secrets
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+
+# Node.js / npm
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+lerna-debug.log*
+dist/
+coverage/
+.npm/
+
+# Next.js
+.next/
+out/
+.turbo/
+.vercel/
+
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+**/build/
+*.apk
+*.aab
+.flutter-automation/
+.flutter_tool_state
+
+# Android / Gradle
+.gradle/
+local.properties
+**/android/key.properties
+**/android/*.jks
+**/android/*.keystore
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+ENV/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+*.egg-info/
+.eggs/
+wheels/
+pip-wheel-metadata/
+
+# ML datasets and generated model artifacts
+# Keep code and small sample datasets tracked.
+# Add specific large/private dataset paths here when needed.
+**/experiments/**/artifacts/
+
+# IDEs and editors
+.idea/
+*.iml
+.vscode/
+*.swp
+*.swo
+
+# Operating systems
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Logs and temporary files
+*.log
+*.tmp
+*.bak
+*.orig
+
+# Local databases and generated credentials
+*.db
+*.sqlite
+*.sqlite3
+*.jsonl
+*-credentials.json
+service-account*.json

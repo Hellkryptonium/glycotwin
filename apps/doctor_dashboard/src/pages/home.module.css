@@ -1,0 +1,21 @@
+.page { min-height: 100vh; padding: 28px 5vw 22px; }
+.header, .footer { align-items: center; display: flex; justify-content: space-between; }
+.brand { align-items: center; display: flex; font-family: Georgia, serif; font-size: 21px; gap: 9px; }
+.brand span { align-items: center; background: var(--marigold); border: 2px solid var(--ink); border-radius: 50%; display: inline-flex; height: 32px; justify-content: center; width: 32px; }
+.header a { align-items: center; display: flex; font-size: 14px; font-weight: 700; gap: 7px; }
+.hero { align-items: center; display: grid; gap: 8vw; grid-template-columns: minmax(0, 1fr) minmax(240px, 360px); min-height: calc(100vh - 130px); padding: 8vh 7vw 12vh; }
+.heroCopy { max-width: 760px; }
+.eyebrow { color: var(--tomato); font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.heroCopy h1 { font-family: Georgia, serif; font-size: clamp(52px, 8vw, 110px); font-weight: 400; letter-spacing: -.065em; line-height: .94; margin: 16px 0 28px; max-width: 850px; }
+.lede { color: var(--muted-ink); font-size: 18px; max-width: 500px; }
+.actions { align-items: center; display: flex; flex-wrap: wrap; gap: 18px; margin-top: 34px; }
+.primary, .secondary { align-items: center; display: inline-flex; gap: 8px; }
+.primary { background: var(--cobalt); border: 2px solid var(--ink); border-radius: 8px; box-shadow: var(--shadow); color: var(--white); font-weight: 700; padding: 13px 17px; transition: transform 120ms ease, box-shadow 120ms ease; }
+.primary:hover { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+.secondary { border-bottom: 2px solid var(--ink); font-weight: 700; padding: 8px 0; }
+.heroNote { background: var(--blush); border: 2px solid var(--ink); box-shadow: 8px 8px 0 var(--ink); padding: 26px; transform: rotate(2deg); }
+.noteNumber { color: var(--tomato); font-family: Georgia, serif; font-size: 44px; }
+.heroNote p { font-family: Georgia, serif; font-size: 27px; line-height: 1.05; margin: 40px 0 12px; }
+.heroNote span { color: var(--muted-ink); display: block; font-size: 14px; }
+.footer { border-top: 1px solid var(--line); color: var(--muted-ink); font-size: 12px; padding-top: 14px; }
+@media (max-width: 760px) { .hero { display: block; min-height: auto; padding: 13vh 0 8vh; } .heroCopy h1 { font-size: 58px; } .heroNote { margin: 56px 10px 24px 0; } .footer { gap: 20px; } }

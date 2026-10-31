@@ -1,0 +1,6 @@
+.pill { align-items: center; border: 1px solid currentColor; border-radius: 999px; display: inline-flex; font-size: 12px; font-weight: 700; gap: 6px; letter-spacing: .04em; padding: 4px 9px; text-transform: uppercase; }
+.dot { background: currentColor; border-radius: 50%; height: 7px; width: 7px; }
+.neutral { color: var(--muted-ink); }
+.success { color: var(--pine); }
+.warning { color: #8a6400; }
+.danger { color: var(--tomato); }

@@ -1,0 +1,78 @@
+{
+  "exp1_logistic_balanced": {
+    "youden_j": {
+      "threshold": 0.45,
+      "training_oof_j": 0.3362215909090911
+    },
+    "f1_optimized": {
+      "threshold": 0.65,
+      "training_oof_f1": 0.21951219512195122
+    },
+    "sensitivity_80": {
+      "threshold": 0.3,
+      "training_oof_sensitivity": 0.8068181818181818,
+      "status": "achieved"
+    },
+    "fixed_0_5": {
+      "threshold": 0.5,
+      "selection": "prespecified reference; not optimized"
+    }
+  },
+  "exp1_random_forest_balanced_subsample": {
+    "youden_j": {
+      "threshold": 0.15,
+      "training_oof_j": 0.3159801136363636
+    },
+    "f1_optimized": {
+      "threshold": 0.25,
+      "training_oof_f1": 0.2222222222222222
+    },
+    "sensitivity_80": {
+      "threshold": 0.05,
+      "training_oof_sensitivity": 0.9318181818181818,
+      "status": "achieved"
+    },
+    "fixed_0_5": {
+      "threshold": 0.5,
+      "selection": "prespecified reference; not optimized"
+    }
+  },
+  "exp1_xgboost_unweighted": {
+    "youden_j": {
+      "threshold": 0.05,
+      "training_oof_j": 0.31583806818181825
+    },
+    "f1_optimized": {
+      "threshold": 0.1,
+      "training_oof_f1": 0.23121387283236994
+    },
+    "sensitivity_80": {
+      "threshold": null,
+      "training_oof_sensitivity": null,
+      "status": "not achieved on the 0.05\u20130.95 grid"
+    },
+    "fixed_0_5": {
+      "threshold": 0.5,
+      "selection": "prespecified reference; not optimized"
+    }
+  },
+  "xgboost_scale_pos_weight": {
+    "youden_j": {
+      "threshold": 0.25,
+      "training_oof_j": 0.3191051136363636
+    },
+    "f1_optimized": {
+      "threshold": 0.55,
+      "training_oof_f1": 0.21016949152542372
+    },
+    "sensitivity_80": {
+      "threshold": 0.15,
+      "training_oof_sensitivity": 0.8181818181818182,
+      "status": "achieved"
+    },
+    "fixed_0_5": {
+      "threshold": 0.5,
+      "selection": "prespecified reference; not optimized"
+    }
+  }
+}
