@@ -53,12 +53,15 @@ All application endpoints use `/api/v1`.
 - Authentication: `/auth/register/doctor`, `/auth/register/patient`, `/auth/login`, `/auth/refresh`, `/auth/logout`, `/auth/me`.
 - Doctor connections: `/doctor/patients/search`, `/doctor/invitations`, `/doctor/patients`.
 - Patient connections: `/patient/invitations`, `/patient/invitations/:id/respond`, `/patient/relationships/:id/revoke`.
+- Patient profiles: `GET /patient/profile`, `PUT /patient/profile`.
+- Doctor profile read: `GET /doctor/patients/:patientId/profile` for active relationships only.
+- Glucose records: patient CRUD under `/patient/glucose-readings`; doctor read-only history under `/doctor/patients/:patientId/glucose-readings`.
 
 The authoritative request schemas and response types are in `src/modules/auth` and `src/modules/connections`.
 
 ## Authentication and authorization
 
-Passwords are hashed with bcrypt. Login returns a short-lived signed JWT access token and an opaque refresh token. Refresh tokens are rotated; only their hashes are persisted. Protected routes use bearer authentication. Doctor connection operations require a verified doctor, while patient connection operations require an active patient role. Invitation acceptance creates the relationship only after explicit patient consent.
+Passwords are hashed with bcrypt. Login returns a short-lived signed JWT access token and an opaque refresh token. Refresh tokens are rotated; only their hashes are persisted. Protected routes use bearer authentication. Doctor connection and glucose-history operations require a verified doctor, while patient operations require an active patient role. Invitation acceptance creates the relationship only after explicit patient consent. Patients own their profile and manual glucose records; verified doctors can read them only through active relationships.
 
 ## Testing
 

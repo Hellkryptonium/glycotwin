@@ -32,7 +32,7 @@ npm run start
 - `/auth/login` — doctor/patient login routing.
 - `/dashboard` — authenticated overview.
 - `/patients` — exact-email patient search, invitation creation, and connected patients.
-- `/patients/[patientId]` — connection detail placeholder without health data.
+- `/patients/[patientId]` — read-only profile and paginated blood-glucose history for an actively connected patient.
 - `/settings` — account information and logout.
 
-Doctor invitation creation and connected-patient listing require the API's verified-doctor authorization policy. The dashboard displays API errors and redirects unauthenticated users to login.
+Doctor invitation creation, connected-patient listing, profile reads, and glucose history require the API's verified-doctor authorization policy. The dashboard displays incomplete fields explicitly, supports date/context filters, handles API errors, and does not provide profile or glucose editing.

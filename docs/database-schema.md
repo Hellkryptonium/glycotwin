@@ -9,6 +9,7 @@ The initial PostgreSQL schema is defined in `apps/api/src/db/schema`. Drizzle Ki
 - `patient_profiles` stores only the requested patient profile fields. Date of birth, gender, and diabetes type are optional.
 - `doctor_patient_invitations` records a doctor's request to establish a patient relationship and its consent response.
 - `doctor_patient_relationships` records access relationships created from accepted invitations. Active and revoked relationships are retained for auditability.
+- `glucose_readings` stores patient-owned manual blood glucose records with a PostgreSQL `numeric` value, original unit, measurement context, measured timestamp, notes, and audit timestamps.
 - `refresh_tokens` stores only a unique hash and lifecycle timestamps. Raw refresh tokens must never be persisted.
 - `audit_logs` stores actor, action, resource, JSON metadata, and creation time. Metadata must exclude passwords, tokens, and unnecessary health information.
 
@@ -29,6 +30,7 @@ All generated timestamps use PostgreSQL `timestamp with time zone`. UUID primary
 - A partial unique index prevents more than one `pending` invitation for a doctor-patient pair.
 - A partial unique index prevents more than one `active` relationship for a doctor-patient pair. Revoked history remains available.
 - Status, actor, resource, patient, doctor, user, and timestamp indexes support common lookup paths.
+- Glucose readings are indexed by patient and measured timestamp, and by patient and context.
 - Doctor experience cannot be negative.
 - Relationship status must agree with `revoked_at`: active relationships have no revocation timestamp, and revoked relationships must have one.
 - Database triggers require doctor profiles to belong to doctor-role users and patient profiles to belong to patient-role users. They also prevent changing a user's role away from an existing profile type.
@@ -52,6 +54,7 @@ Some rules depend on authorization or transaction context and are intentionally 
 - Every access query must filter for an active relationship. The schema does not use row-level security yet.
 - `updated_at` values must be maintained by application update statements until update triggers are introduced.
 - Audit metadata is application-controlled JSON. Services must redact credentials, tokens, and unnecessary health information before inserting it.
+- Glucose values are validated at the API boundary for reasonable positive bounds, while no diagnostic interpretation or threshold classification is stored.
 - Profile role triggers prevent incompatible role/profile combinations, but they do not enforce exactly one profile type for every user or require a profile for every non-admin user.
 
 ## Migrations

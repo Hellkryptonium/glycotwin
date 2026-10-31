@@ -31,6 +31,11 @@ export interface PatientProfile {
   diabetesType: string | null;
 }
 
+export interface PatientProfileResponse {
+  email: string;
+  profile: PatientProfile;
+}
+
 export interface Tokens {
   accessToken: string;
   refreshToken: string;
@@ -79,4 +84,23 @@ export interface ApiErrorShape {
   message: string;
   requestId?: string;
   status?: number;
+}
+
+export interface GlucoseReading {
+  id: string;
+  patientId: string;
+  value: string;
+  unit: 'mg/dL' | 'mmol/L';
+  measuredAt: string;
+  context: 'FASTING' | 'BEFORE_MEAL' | 'AFTER_MEAL' | 'RANDOM';
+  source: 'MANUAL';
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GlucosePage {
+  items: GlucoseReading[];
+  page: number;
+  limit: number;
 }

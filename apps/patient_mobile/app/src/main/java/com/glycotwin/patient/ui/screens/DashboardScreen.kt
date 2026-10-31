@@ -51,15 +51,17 @@ fun DashboardScreen(user: UserDto?, patientViewModel: PatientViewModel, onLogout
         patientViewModel.load()
     }
     LaunchedEffect(selectedTab) {
-        if (selectedTab == 1) patientViewModel.refresh()
+        if (selectedTab == 2) patientViewModel.refresh()
+        if (selectedTab == 1) patientViewModel.loadReadings(refresh = true)
     }
     Scaffold(
         containerColor = com.glycotwin.patient.ui.theme.WarmOat,
         bottomBar = {
             NavigationBar(containerColor = com.glycotwin.patient.ui.theme.GlycoWhite) {
                 NavigationBarItem(selected = selectedTab == 0, onClick = { selectedTab = 0 }, icon = { Text("01") }, label = { Text("Home") })
-                NavigationBarItem(selected = selectedTab == 1, onClick = { selectedTab = 1 }, icon = { Text("02") }, label = { Text("Care team") })
-                NavigationBarItem(selected = selectedTab == 2, onClick = { selectedTab = 2 }, icon = { Text("03") }, label = { Text("Profile") })
+                NavigationBarItem(selected = selectedTab == 1, onClick = { selectedTab = 1 }, icon = { Text("02") }, label = { Text("Health") })
+                NavigationBarItem(selected = selectedTab == 2, onClick = { selectedTab = 2 }, icon = { Text("03") }, label = { Text("Care team") })
+                NavigationBarItem(selected = selectedTab == 3, onClick = { selectedTab = 3 }, icon = { Text("04") }, label = { Text("Profile") })
             }
         },
     ) { paddingValues ->
@@ -68,10 +70,11 @@ fun DashboardScreen(user: UserDto?, patientViewModel: PatientViewModel, onLogout
                 Modifier.padding(paddingValues),
                 user,
                 patientState,
-                onCareTeam = { selectedTab = 1 },
+                onCareTeam = { selectedTab = 2 },
             )
-            1 -> CareTeamContent(Modifier.padding(paddingValues), patientState, patientViewModel)
-            else -> ProfileContent(Modifier.padding(paddingValues), user, onLogout)
+            1 -> HealthRecordsScreen(patientViewModel)
+            2 -> CareTeamContent(Modifier.padding(paddingValues), patientState, patientViewModel)
+            else -> ProfileScreen(patientViewModel, user, onLogout)
         }
     }
 }
@@ -93,7 +96,7 @@ private fun HomeContent(
         item { BrandHeader() }
         item {
             Column {
-                Text("Good to see you${user?.patientProfile?.fullName?.let { ", $it" } ?: ""}.", style = MaterialTheme.typography.headlineLarge)
+                Text("Good to see you${state.profile?.profile?.fullName?.let { ", $it" } ?: user?.patientProfile?.fullName?.let { ", $it" } ?: ""}.", style = MaterialTheme.typography.headlineLarge)
                 Text("Your care, in reach.", color = MutedInk)
             }
         }
@@ -191,16 +194,3 @@ private fun formatDate(value: String): String = runCatching {
         Instant.parse(value).atZone(ZoneId.systemDefault()),
     )
 }.getOrDefault(value)
-
-@Composable
-private fun ProfileContent(modifier: Modifier, user: UserDto?, onLogout: () -> Unit) {
-    Column(modifier = modifier.fillMaxSize().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        BrandHeader()
-        Text("Profile", style = MaterialTheme.typography.headlineLarge)
-        SectionCard("Account") {
-            Text(user?.email ?: "")
-            user?.patientProfile?.fullName?.let { Text(it, color = MutedInk) }
-        }
-        TactileOutlinedButton("Log out", onLogout, Modifier.fillMaxWidth())
-    }
-}

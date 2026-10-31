@@ -15,6 +15,7 @@ import com.glycotwin.patient.data.repository.PatientRepository
 import com.glycotwin.patient.ui.screens.DashboardScreen
 import com.glycotwin.patient.ui.screens.LoginScreen
 import com.glycotwin.patient.ui.screens.RegisterScreen
+import com.glycotwin.patient.ui.screens.ProfileScreen
 import com.glycotwin.patient.ui.screens.WelcomeScreen
 import com.glycotwin.patient.ui.viewmodel.AuthViewModel
 import com.glycotwin.patient.ui.viewmodel.PatientViewModel
@@ -37,11 +38,13 @@ fun GlycoTwinApp() {
     if (authState.restoring) return
     if (authState.user != null) {
         val patientViewModel: PatientViewModel = viewModel(factory = SimpleFactory { PatientViewModel(patientRepository) })
-        DashboardScreen(
-            user = authState.user,
-            patientViewModel = patientViewModel,
-            onLogout = authViewModel::logout,
-        )
+        val patientState by patientViewModel.state.collectAsState()
+        androidx.compose.runtime.LaunchedEffect(Unit) { patientViewModel.load() }
+        if (!patientState.profileLoading && patientState.profile?.profile?.fullName.isNullOrBlank() && patientState.profile != null) {
+            ProfileScreen(patientViewModel, authState.user, authViewModel::logout, required = true)
+        } else {
+            DashboardScreen(user = authState.user, patientViewModel = patientViewModel, onLogout = authViewModel::logout)
+        }
         return
     }
     var destination by remember { mutableStateOf(if (authState.registrationComplete) Destination.Login else Destination.Welcome) }

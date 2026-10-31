@@ -30,6 +30,12 @@ data class InvitationDto(
 data class DoctorDto(val id: String?, val fullName: String?)
 data class InvitationAction(val action: String)
 data class InvitationStatus(val status: String)
+data class PatientProfileUpdate(
+    val fullName: String,
+    val dateOfBirth: String?,
+    val gender: String?,
+    val diabetesType: String?,
+)
 
 interface GlycoTwinApi {
     @POST("auth/register/patient")
@@ -56,4 +62,61 @@ interface GlycoTwinApi {
         @Body body: InvitationAction,
         @retrofit2.http.Header("Authorization") authorization: String,
     ): Response<ApiResponse<InvitationStatus>>
+
+    @retrofit2.http.GET("patient/profile")
+    suspend fun profile(@retrofit2.http.Header("Authorization") authorization: String): Response<ApiResponse<PatientProfileResponse>>
+
+    @retrofit2.http.PUT("patient/profile")
+    suspend fun updateProfile(
+        @retrofit2.http.Body body: PatientProfileUpdate,
+        @retrofit2.http.Header("Authorization") authorization: String,
+    ): Response<ApiResponse<PatientProfileResponse>>
+
+    @retrofit2.http.POST("patient/glucose-readings")
+    suspend fun createGlucoseReading(
+        @retrofit2.http.Body body: GlucoseReadingInput,
+        @retrofit2.http.Header("Authorization") authorization: String,
+    ): Response<ApiResponse<GlucoseReadingDto>>
+
+    @retrofit2.http.GET("patient/glucose-readings")
+    suspend fun glucoseReadings(
+        @retrofit2.http.Query("page") page: Int,
+        @retrofit2.http.Query("limit") limit: Int,
+        @retrofit2.http.Header("Authorization") authorization: String,
+    ): Response<ApiResponse<GlucosePageDto>>
+
+    @retrofit2.http.PUT("patient/glucose-readings/{id}")
+    suspend fun updateGlucoseReading(
+        @retrofit2.http.Path("id") id: String,
+        @retrofit2.http.Body body: GlucoseReadingInput,
+        @retrofit2.http.Header("Authorization") authorization: String,
+    ): Response<ApiResponse<GlucoseReadingDto>>
+
+    @retrofit2.http.DELETE("patient/glucose-readings/{id}")
+    suspend fun deleteGlucoseReading(
+        @retrofit2.http.Path("id") id: String,
+        @retrofit2.http.Header("Authorization") authorization: String,
+    ): Response<Unit>
 }
+
+data class PatientProfileResponse(val email: String, val profile: PatientProfileDto)
+data class GlucoseReadingDto(
+    val id: String,
+    val patientId: String,
+    val value: String,
+    val unit: String,
+    val measuredAt: String,
+    val context: String,
+    val source: String,
+    val notes: String?,
+    val createdAt: String,
+    val updatedAt: String,
+)
+data class GlucosePageDto(val items: List<GlucoseReadingDto>, val page: Int, val limit: Int)
+data class GlucoseReadingInput(
+    val value: String,
+    val unit: String,
+    val measuredAt: String,
+    val context: String,
+    val notes: String?,
+)

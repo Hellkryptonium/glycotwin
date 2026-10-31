@@ -12,6 +12,8 @@ GlycoTwin is a diabetes digital-twin platform for connecting patients with docto
 - Doctor patient search and invitation creation.
 - Patient invitation listing, acceptance, and decline.
 - Connected patient visibility in the doctor dashboard after consent.
+- Patient profile completion and read-only connected-patient profile viewing.
+- Manual blood glucose recording for patients and read-only connected-doctor history.
 - PostgreSQL schema and Drizzle migrations.
 
 ### Implemented but not fully end-to-end verified
@@ -22,7 +24,7 @@ GlycoTwin is a diabetes digital-twin platform for connecting patients with docto
 ### Planned
 
 - Patient profile editing and richer relationship management.
-- Health data and digital-twin views.
+- Device-imported health data and richer digital-twin views.
 - Clinical data integrations and validated research workflows.
 
 ## Architecture

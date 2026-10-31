@@ -29,6 +29,9 @@ The API URL is a Gradle build property:
 
 - Patient registration and login.
 - Session restore, refresh, and logout.
+- Profile completion after login, profile retrieval, and patient-owned profile updates.
+- Editable full name, date of birth, gender, and diabetes type; email is read-only.
+- Health Records tab with manual glucose entry, native date/time pickers, history, editing, deletion confirmation, and refresh.
 - `GET /patient/invitations`.
 - Accept/decline through `POST /patient/invitations/:id/respond`.
 - Care Team invitation loading, refresh, action states, and errors.
@@ -36,4 +39,4 @@ The API URL is a Gradle build property:
 
 ## Limitations
 
-The API currently has no patient-side relationship-list endpoint. The app therefore does not invent one; connected-doctor information is shown only when supported by returned accepted-invitation data. Health metrics, device data, recommendations, and ML predictions are intentionally not implemented.
+The API currently has no patient-side relationship-list endpoint. The app therefore does not invent one; connected-doctor information is shown only when supported by returned accepted-invitation data. Gender and diabetes type remain validated text fields because the existing database has no enum values. Health metrics, device data, recommendations, and ML predictions are intentionally not implemented.
