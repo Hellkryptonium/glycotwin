@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -48,7 +49,7 @@ private val units = listOf("mg/dL", "mmol/L")
 private val displayDateTime = DateTimeFormatter.ofPattern("d MMM yyyy, h:mm a", Locale.getDefault())
 
 @Composable
-fun HealthRecordsScreen(viewModel: PatientViewModel) {
+fun HealthRecordsScreen(viewModel: PatientViewModel, modifier: Modifier = Modifier) {
     val state by viewModel.state.collectAsState()
     var editing by remember { mutableStateOf<GlucoseReadingDto?>(null) }
     var showForm by rememberSaveable { mutableStateOf(false) }
@@ -81,8 +82,9 @@ fun HealthRecordsScreen(viewModel: PatientViewModel) {
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(20.dp),
+        modifier = modifier.fillMaxSize().padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(top = 20.dp, bottom = 24.dp),
     ) {
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {

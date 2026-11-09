@@ -104,3 +104,39 @@ export interface GlucosePage {
   page: number;
   limit: number;
 }
+
+export type AnalyticsRange = '7d' | '30d' | '90d';
+
+export interface GlucoseAnalytics {
+  range: AnalyticsRange;
+  from: string;
+  to: string;
+  unit: 'mg/dL' | 'mmol/L' | null;
+  latest: { value: string; measuredAt: string; unit: 'mg/dL' | 'mmol/L' } | null;
+  totalReadings: number;
+  average: string | null;
+  minimum: string | null;
+  maximum: string | null;
+  daily: Array<{ date: string; average: string; readingCount: number; unit: 'mg/dL' | 'mmol/L' }>;
+  readings: Array<{ value: string; measuredAt: string; unit: 'mg/dL' | 'mmol/L' }>;
+  byUnit: Array<{ unit: 'mg/dL' | 'mmol/L'; totalReadings: number; average: string; minimum: string; maximum: string }>;
+}
+
+export interface LifestyleEntry {
+  id: string;
+  patientId: string;
+  type: 'meal' | 'activity' | 'sleep' | 'symptom';
+  occurredAt: string;
+  mealType: string | null;
+  description: string | null;
+  activityType: string | null;
+  durationMinutes: number | null;
+  sleepDurationMinutes: number | null;
+  notes: string | null;
+}
+
+export interface LifestylePage {
+  items: LifestyleEntry[];
+  page: number;
+  limit: number;
+}

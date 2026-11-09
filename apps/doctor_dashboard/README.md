@@ -36,3 +36,5 @@ npm run start
 - `/settings` — account information and logout.
 
 Doctor invitation creation, connected-patient listing, profile reads, and glucose history require the API's verified-doctor authorization policy. The dashboard displays incomplete fields explicitly, supports date/context filters, handles API errors, and does not provide profile or glucose editing.
+The patient detail page includes a read-only Health Trends section with 7-day, 30-day, and 90-day descriptive glucose charts and daily summaries. It uses the authenticated doctor analytics endpoint and handles loading, empty, and error states.
+It also includes a read-only Daily Health Activity timeline for connected patients, filtered by the existing From/To date controls.

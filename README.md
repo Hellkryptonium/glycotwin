@@ -14,6 +14,8 @@ GlycoTwin is a diabetes digital-twin platform for connecting patients with docto
 - Connected patient visibility in the doctor dashboard after consent.
 - Patient profile completion and read-only connected-patient profile viewing.
 - Manual blood glucose recording for patients and read-only connected-doctor history.
+- Descriptive glucose trends and daily analytics for patients and connected verified doctors.
+- Patient-owned lifestyle tracking for meals, activity, sleep, and symptoms, with connected-doctor read-only timelines.
 - PostgreSQL schema and Drizzle migrations.
 
 ### Implemented but not fully end-to-end verified
@@ -41,6 +43,8 @@ GlycoTwin/
 ```
 
 The doctor dashboard and patient app communicate with the Express API under `/api/v1`. The API uses PostgreSQL through Drizzle ORM. The ML service is a separate research application and is not part of the authenticated patient-care workflow.
+
+Glucose analytics is available at `GET /api/v1/patient/analytics/glucose` and `GET /api/v1/doctor/patients/:patientId/analytics/glucose` with `range=7d`, `30d`, or `90d`. It reports actual readings and descriptive aggregates only.
 
 ## Technology stack
 
