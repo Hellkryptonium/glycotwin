@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.glycotwin.patient.ui.theme.Blush
 import com.glycotwin.patient.ui.theme.Cobalt
@@ -58,13 +60,32 @@ fun BrandHeader(modifier: Modifier = Modifier) {
 }
 
 @Composable
+fun ProfileAvatar(name: String?, modifier: Modifier = Modifier, onClick: (() -> Unit)? = null) {
+    val initial = name?.trim()?.firstOrNull()?.uppercaseChar() ?: '?'
+    val content = @Composable {
+        Text(initial.toString(), style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+    }
+    if (onClick == null) {
+        Surface(modifier = modifier.size(44.dp), shape = CircleShape, color = Marigold, border = androidx.compose.foundation.BorderStroke(2.dp, Ink), content = content)
+    } else {
+        androidx.compose.material3.FilledTonalButton(
+            onClick = onClick,
+            modifier = modifier.size(44.dp),
+            shape = CircleShape,
+            contentPadding = PaddingValues(0.dp),
+            colors = ButtonDefaults.filledTonalButtonColors(containerColor = Marigold, contentColor = Ink),
+        ) { content() }
+    }
+}
+
+@Composable
 fun TactileButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Button(
         onClick = onClick,
         modifier = modifier.shadow(3.dp, RoundedCornerShape(10.dp)),
         shape = RoundedCornerShape(10.dp),
         colors = ButtonDefaults.buttonColors(containerColor = Cobalt, contentColor = GlycoWhite),
-    ) { Text(text, fontWeight = FontWeight.Bold) }
+    ) { Text(text, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip) }
 }
 
 @Composable
@@ -75,7 +96,8 @@ fun TactileOutlinedButton(text: String, onClick: () -> Unit, modifier: Modifier 
         shape = RoundedCornerShape(10.dp),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = Ink),
         border = androidx.compose.foundation.BorderStroke(2.dp, Ink),
-    ) { Text(text, fontWeight = FontWeight.Bold) }
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+    ) { Text(text, fontWeight = FontWeight.Bold, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip) }
 }
 
 @Composable
@@ -94,9 +116,9 @@ fun EmptyState(title: String, message: String, accent: Color = Blush, modifier: 
 }
 
 @Composable
-fun SectionCard(title: String, content: @Composable () -> Unit) {
+fun SectionCard(title: String, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = GlycoWhite),
         shape = RoundedCornerShape(18.dp),
     ) {

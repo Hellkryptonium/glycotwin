@@ -22,7 +22,7 @@ Copy `.env.example` to `.env` and set values locally:
 - `BCRYPT_ROUNDS`
 - `FRONTEND_ORIGIN`
 
-Never commit `.env` or real credentials. Production rejects `DEMO_MODE=true`. The development server defaults to `0.0.0.0:5000` so Android Emulator and LAN clients can reach it.
+Never commit `.env` or real credentials. Production rejects `DEMO_MODE=true`. The development server defaults to `0.0.0.0:5050` so it does not conflict with macOS ControlCenter; Android Emulator and LAN clients can reach it.
 
 ## Commands
 
@@ -56,6 +56,8 @@ All application endpoints use `/api/v1`.
 - Patient profiles: `GET /patient/profile`, `PUT /patient/profile`.
 - Doctor profile read: `GET /doctor/patients/:patientId/profile` for active relationships only.
 - Glucose records: patient CRUD under `/patient/glucose-readings`; doctor read-only history under `/doctor/patients/:patientId/glucose-readings`.
+- Glucose analytics: `GET /patient/analytics/glucose` and `GET /doctor/patients/:patientId/analytics/glucose`, with `range=7d|30d|90d`. The response contains actual readings, latest value, descriptive summary statistics, and daily averages/counts. Mixed units are returned in `byUnit` and are not silently converted.
+- Lifestyle tracking: patient CRUD under `/patient/lifestyle/{meals,activities,sleep,symptoms}` and `/patient/lifestyle/timeline`; verified doctors can read `/doctor/patients/:patientId/lifestyle/timeline`. Entries are patient-owned and date-filterable.
 
 The authoritative request schemas and response types are in `src/modules/auth` and `src/modules/connections`.
 
@@ -70,5 +72,7 @@ Tests use Vitest and Supertest:
 ```powershell
 npm test
 ```
+
+Analytics is read-only, uses UTC date buckets, and requires patient ownership or an active verified doctor relationship.
 
 The test suite injects database readiness and does not require a live PostgreSQL server for the covered cases.

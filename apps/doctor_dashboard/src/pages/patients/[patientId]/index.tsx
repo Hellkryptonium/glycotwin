@@ -5,8 +5,27 @@ import { AppShell } from '../../../components/layout/app-shell';
 import styles from './patient-detail.module.css';
 import { StateMessage } from '../../../components/feedback/state-message';
 import { normalizeApiError } from '../../../services/api';
-import { usePatientGlucoseReadings, usePatientProfile } from '../../../queries/patients.queries';
+import { usePatientGlucoseReadings, usePatientLifestyle, usePatientProfile } from '../../../queries/patients.queries';
+import { usePatientGlucoseAnalytics } from '../../../queries/patients.queries';
+import type { AnalyticsRange } from '../../../types/api';
 import { useState } from 'react';
+
+function TrendChart({ readings }: { readings: Array<{ value: string; measuredAt: string; unit: string }> }) {
+  if (!readings.length) return <StateMessage kind="empty">No readings in this range.</StateMessage>;
+  const values = readings.map((reading) => Number(reading.value));
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const width = 720;
+  const height = 220;
+  const y = (value: number) => height - 20 - ((value - min) / Math.max(max - min, 1)) * (height - 40);
+  const points = readings.map((reading, index) => `${(index / Math.max(readings.length - 1, 1)) * (width - 20) + 10},${y(Number(reading.value))}`).join(' ');
+  return <div className={styles.chartWrap}><svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Glucose readings over time" className={styles.chart}>
+    <polyline points={points} fill="none" stroke="var(--cobalt)" strokeWidth="3" />
+    {readings.map((reading, index) => <circle key={`${reading.measuredAt}-${index}`} cx={(index / Math.max(readings.length - 1, 1)) * (width - 20) + 10} cy={y(Number(reading.value))} r="4" fill="var(--tomato)">
+      <title>{`${new Date(reading.measuredAt).toLocaleString()}: ${reading.value} ${reading.unit}`}</title>
+    </circle>)}
+  </svg><div className={styles.chartAxis}><span>{min}</span><span>{max}</span></div></div>;
+}
 
 export default function PatientDetailPage() {
   const router = useRouter();
@@ -16,7 +35,15 @@ export default function PatientDetailPage() {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [context, setContext] = useState('');
+  const [range, setRange] = useState<AnalyticsRange>('7d');
   const glucose = usePatientGlucoseReadings(patientId, { page, limit: 10, ...(from && { from: `${from}T00:00:00.000Z` }), ...(to && { to: `${to}T23:59:59.999Z` }), ...(context && { context }) });
+  const analytics = usePatientGlucoseAnalytics(patientId, range);
+  const lifestyle = usePatientLifestyle(patientId, {
+    page: 1,
+    limit: 50,
+    ...(from && { from: `${from}T00:00:00.000Z` }),
+    ...(to && { to: `${to}T23:59:59.999Z` }),
+  });
   const patient = profile.data;
   return <AppShell><section className={styles.page}>
     <Link href="/patients" className={styles.back}><ArrowLeft size={17} />Back to patients</Link>
@@ -44,5 +71,22 @@ export default function PatientDetailPage() {
           <StateMessage kind="empty">No readings match these filters.</StateMessage>}
         <div className={styles.pagination}><button disabled={page === 1} onClick={() => setPage((current) => current - 1)}>Previous</button><button disabled={!glucose.data || glucose.data.items.length < 10} onClick={() => setPage((current) => current + 1)}>Next</button></div>
       </div></> : <StateMessage kind="empty">Patient profile is unavailable.</StateMessage>}
+    {patient && <section className={styles.analytics}>
+      <div className={styles.recordsHead}><div><span className={styles.label}>Health trends</span><h3>Glucose overview</h3></div><div className={styles.rangeSelector}>{(['7d', '30d', '90d'] as AnalyticsRange[]).map((option) => <button key={option} className={range === option ? styles.activeRange : ''} onClick={() => setRange(option)}>{option}</button>)}</div></div>
+      {analytics.isLoading ? <StateMessage kind="loading">Loading trends</StateMessage> :
+        analytics.error ? <StateMessage kind="error">{normalizeApiError(analytics.error).message}</StateMessage> :
+        analytics.data ? <><div className={styles.stats}>
+          {[['Latest', analytics.data.latest ? `${analytics.data.latest.value} ${analytics.data.latest.unit}` : '—'], ['Average', analytics.data.average ? `${analytics.data.average} ${analytics.data.unit ?? ''}` : '—'], ['Highest', analytics.data.maximum ? `${analytics.data.maximum} ${analytics.data.unit ?? ''}` : '—'], ['Lowest', analytics.data.minimum ? `${analytics.data.minimum} ${analytics.data.unit ?? ''}` : '—']].map(([label, value]) => <div className={styles.stat} key={label}><span className={styles.label}>{label}</span><strong>{value}</strong></div>)}
+        </div>{analytics.data.byUnit.length > 1 ? <StateMessage kind="empty">Readings use multiple units. The chart is unavailable without converting values.</StateMessage> : <TrendChart readings={analytics.data.readings} />}<p className={styles.readingCount}>{analytics.data.totalReadings} recorded reading{analytics.data.totalReadings === 1 ? '' : 's'} · Calculated averages are descriptive only.</p>
+        {analytics.data.daily.length > 0 && <div className={styles.daily}><span className={styles.label}>Daily summary</span>{analytics.data.daily.map((day) => <div key={`${day.date}-${day.unit}`}><span>{day.date}</span><strong>{day.average} {day.unit}</strong><small>{day.readingCount} reading{day.readingCount === 1 ? '' : 's'}</small></div>)}</div>}
+        </> : <StateMessage kind="empty">No readings in this range.</StateMessage>}
+    </section>}
+    {patient && <section className={styles.analytics}>
+      <div className={styles.recordsHead}><div><span className={styles.label}>Daily health activity</span><h3>Lifestyle timeline</h3></div></div>
+      {lifestyle.isLoading ? <StateMessage kind="loading">Loading lifestyle activity</StateMessage> :
+        lifestyle.error ? <StateMessage kind="error">{normalizeApiError(lifestyle.error).message}</StateMessage> :
+        lifestyle.data?.items.length ? <div className={styles.daily}>{lifestyle.data.items.map((entry) => <div key={entry.id}><span>{entry.type} · {new Date(entry.occurredAt).toLocaleString()}</span><strong>{entry.description || entry.activityType || entry.mealType || (entry.sleepDurationMinutes ? `${entry.sleepDurationMinutes} minutes` : '')}</strong><small>{entry.durationMinutes ? `${entry.durationMinutes} minutes` : entry.notes || ''}</small></div>)}</div> :
+        <StateMessage kind="empty">No lifestyle activity in this date range.</StateMessage>}
+    </section>}
   </section></AppShell>;
 }

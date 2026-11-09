@@ -20,7 +20,7 @@ Open `apps/patient_mobile` in Android Studio and run the `app` configuration aft
 The API URL is a Gradle build property:
 
 ```powershell
-.\gradlew.bat :app:assembleDebug "-PAPI_BASE_URL=http://10.0.2.2:5000/api/v1/"
+.\gradlew.bat :app:assembleDebug "-PAPI_BASE_URL=http://10.0.2.2:5050/api/v1/"
 ```
 
 `10.0.2.2` is the Android Emulator alias for the Windows host. If the Windows emulator networking layer does not route that address, use the host's reachable LAN address instead. Debug builds allow cleartext HTTP; production builds do not.
@@ -40,3 +40,7 @@ The API URL is a Gradle build property:
 ## Limitations
 
 The API currently has no patient-side relationship-list endpoint. The app therefore does not invent one; connected-doctor information is shown only when supported by returned accepted-invitation data. Gender and diabetes type remain validated text fields because the existing database has no enum values. Health metrics, device data, recommendations, and ML predictions are intentionally not implemented.
+The patient app includes a Trends tab with authenticated 7-day, 30-day, and 90-day descriptive glucose analytics, daily summaries, and loading/empty/error states. Values are calculated from recorded readings and are not medical recommendations.
+
+Debug builds also expose a `Preview sample data` action on the Trends tab for checking the complete UI without database records. It is not included in release builds and never changes production analytics.
+The Lifestyle tab records patient-entered meals, activity, sleep, and symptoms through the authenticated API and supports listing and deletion.

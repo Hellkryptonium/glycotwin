@@ -15,6 +15,12 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.ShowChart
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -27,6 +33,7 @@ import androidx.compose.ui.unit.dp
 import com.glycotwin.patient.data.remote.InvitationDto
 import com.glycotwin.patient.data.remote.UserDto
 import com.glycotwin.patient.ui.components.BrandHeader
+import com.glycotwin.patient.ui.components.ProfileAvatar
 import com.glycotwin.patient.ui.components.EmptyState
 import com.glycotwin.patient.ui.components.SectionCard
 import com.glycotwin.patient.ui.components.StatusLabel
@@ -58,10 +65,11 @@ fun DashboardScreen(user: UserDto?, patientViewModel: PatientViewModel, onLogout
         containerColor = com.glycotwin.patient.ui.theme.WarmOat,
         bottomBar = {
             NavigationBar(containerColor = com.glycotwin.patient.ui.theme.GlycoWhite) {
-                NavigationBarItem(selected = selectedTab == 0, onClick = { selectedTab = 0 }, icon = { Text("01") }, label = { Text("Home") })
-                NavigationBarItem(selected = selectedTab == 1, onClick = { selectedTab = 1 }, icon = { Text("02") }, label = { Text("Health") })
-                NavigationBarItem(selected = selectedTab == 2, onClick = { selectedTab = 2 }, icon = { Text("03") }, label = { Text("Care team") })
-                NavigationBarItem(selected = selectedTab == 3, onClick = { selectedTab = 3 }, icon = { Text("04") }, label = { Text("Profile") })
+                NavigationBarItem(selected = selectedTab == 0, onClick = { selectedTab = 0 }, icon = { androidx.compose.material3.Icon(Icons.Default.Home, "Home") }, label = { Text("Home") })
+                NavigationBarItem(selected = selectedTab == 1, onClick = { selectedTab = 1 }, icon = { androidx.compose.material3.Icon(Icons.Default.Favorite, "Health") }, label = { Text("Health") })
+                NavigationBarItem(selected = selectedTab == 2, onClick = { selectedTab = 2 }, icon = { androidx.compose.material3.Icon(Icons.Default.Groups, "Care team") }, label = { Text("Care team") })
+                NavigationBarItem(selected = selectedTab == 3, onClick = { selectedTab = 3 }, icon = { androidx.compose.material3.Icon(Icons.Default.ShowChart, "Trends") }, label = { Text("Trends") })
+                NavigationBarItem(selected = selectedTab == 4, onClick = { selectedTab = 4 }, icon = { androidx.compose.material3.Icon(Icons.Default.DirectionsWalk, "Lifestyle") }, label = { Text("Lifestyle") })
             }
         },
     ) { paddingValues ->
@@ -71,9 +79,12 @@ fun DashboardScreen(user: UserDto?, patientViewModel: PatientViewModel, onLogout
                 user,
                 patientState,
                 onCareTeam = { selectedTab = 2 },
+                onProfile = { selectedTab = 5 },
             )
-            1 -> HealthRecordsScreen(patientViewModel)
+            1 -> HealthRecordsScreen(patientViewModel, Modifier.padding(paddingValues))
             2 -> CareTeamContent(Modifier.padding(paddingValues), patientState, patientViewModel)
+            3 -> HealthTrendsScreen(patientViewModel, Modifier.padding(paddingValues))
+            4 -> LifestyleScreen(patientViewModel, Modifier.padding(paddingValues))
             else -> ProfileScreen(patientViewModel, user, onLogout)
         }
     }
@@ -85,6 +96,7 @@ private fun HomeContent(
     user: UserDto?,
     state: PatientState,
     onCareTeam: () -> Unit,
+    onProfile: () -> Unit,
 ) {
     val pendingCount = state.invitations.count { it.status == "pending" }
     val acceptedDoctor = state.invitations.firstOrNull { it.status == "accepted" }?.doctor
@@ -93,7 +105,15 @@ private fun HomeContent(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(vertical = 24.dp),
     ) {
-        item { BrandHeader() }
+        item {
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                BrandHeader()
+                ProfileAvatar(
+                    state.profile?.profile?.fullName ?: user?.patientProfile?.fullName,
+                    onClick = onProfile,
+                )
+            }
+        }
         item {
             Column {
                 Text("Good to see you${state.profile?.profile?.fullName?.let { ", $it" } ?: user?.patientProfile?.fullName?.let { ", $it" } ?: ""}.", style = MaterialTheme.typography.headlineLarge)

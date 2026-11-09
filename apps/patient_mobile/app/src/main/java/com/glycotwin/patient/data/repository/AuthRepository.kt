@@ -11,7 +11,12 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import retrofit2.Response
 
-class ApiException(message: String, val statusCode: Int? = null, val code: String? = null) : Exception(message)
+class ApiException(
+    message: String,
+    val statusCode: Int? = null,
+    val code: String? = null,
+    val requestId: String? = null,
+) : Exception(message)
 
 class AuthRepository(private val api: GlycoTwinApi, private val tokens: TokenStorage) {
     private val refreshMutex = Mutex()

@@ -13,6 +13,7 @@ import { createAuthModule, type AuthModule } from './modules/auth/auth.routes.js
 import { createConnectionModule } from './modules/connections/connection.module.js';
 import { createPatientProfileModule } from './modules/patients/profile.module.js';
 import { createGlucoseModule } from './modules/health-records/glucose.module.js';
+import { createLifestyleModule } from './modules/lifestyle/lifestyle.module.js';
 import { createRoutes } from './routes/index.js';
 
 export interface AppOptions {
@@ -23,6 +24,7 @@ export interface AppOptions {
   connectionRouter?: Router | null;
   patientProfileRouter?: Router | null;
   glucoseRouter?: Router | null;
+  analyticsRouter?: Router | null;
 }
 
 export function createApp(options: AppOptions = {}) {
@@ -37,9 +39,14 @@ export function createApp(options: AppOptions = {}) {
   const patientProfileRouter = options.patientProfileRouter === null
     ? undefined
     : options.patientProfileRouter ?? (authModule ? createPatientProfileModule(getDatabase(), authModule.service).router : undefined);
+  const glucoseModule = authModule ? createGlucoseModule(getDatabase(), authModule.service) : undefined;
   const glucoseRouter = options.glucoseRouter === null
     ? undefined
-    : options.glucoseRouter ?? (authModule ? createGlucoseModule(getDatabase(), authModule.service).router : undefined);
+    : options.glucoseRouter ?? glucoseModule?.router;
+  const analyticsRouter = options.analyticsRouter === null
+    ? undefined
+    : options.analyticsRouter ?? glucoseModule?.analyticsRouter;
+  const lifestyleRouter = authModule ? createLifestyleModule(getDatabase(), authModule.service).router : undefined;
   const app = express();
 
   app.use(helmet());
@@ -49,7 +56,7 @@ export function createApp(options: AppOptions = {}) {
   app.use(pinoHttp({ redact: ['req.headers.authorization', 'req.headers.cookie'] }));
   app.use(requestIdMiddleware);
   app.use(rateLimit({ windowMs: 60_000, limit: 100, standardHeaders: 'draft-8', legacyHeaders: false }));
-  app.use(createRoutes(createHealthService(databaseHealthCheck), authModule?.router, connectionRouter, patientProfileRouter, glucoseRouter));
+  app.use(createRoutes(createHealthService(databaseHealthCheck), authModule?.router, connectionRouter, patientProfileRouter, glucoseRouter, analyticsRouter, lifestyleRouter));
 
   if (options.additionalRoutes) {
     app.use(options.additionalRoutes);
