@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { AnalyticsRange, ApiResponse, ConnectionPage, GlucoseAnalytics, GlucosePage, LifestylePage, PatientProfileResponse, PatientSearchResult } from '../types/api';
+import type { AnalyticsRange, ApiResponse, ConnectionPage, GlucoseAnalytics, GlucosePage, LifestylePage, MedicationDosePage, MedicationPage, PatientProfileResponse, PatientSearchResult } from '../types/api';
 
 export async function searchPatients(email: string) {
   const response = await api.get<ApiResponse<PatientSearchResult>>('/doctor/patients/search', { params: { email } });
@@ -28,5 +28,15 @@ export async function getPatientGlucoseAnalytics(patientId: string, range: Analy
 
 export async function getPatientLifestyle(patientId: string, filters: { page: number; limit: number; from?: string; to?: string }) {
   const response = await api.get<ApiResponse<LifestylePage>>(`/doctor/patients/${patientId}/lifestyle/timeline`, { params: filters });
+  return response.data.data;
+}
+
+export async function getPatientMedications(patientId: string, status: 'active' | 'discontinued' | 'all' = 'all') {
+  const response = await api.get<ApiResponse<MedicationPage>>(`/doctor/patients/${patientId}/medications`, { params: { status, page: 1, limit: 100 } });
+  return response.data.data;
+}
+
+export async function getPatientMedicationDoses(patientId: string, medicationId: string) {
+  const response = await api.get<ApiResponse<MedicationDosePage>>(`/doctor/patients/${patientId}/medications/${medicationId}/doses`, { params: { page: 1, limit: 100 } });
   return response.data.data;
 }

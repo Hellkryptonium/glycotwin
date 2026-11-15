@@ -4,15 +4,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
@@ -21,14 +25,24 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.ShowChart
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.DirectionsWalk
+import androidx.compose.material.icons.filled.Bloodtype
+import androidx.compose.material.icons.filled.Medication
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Medication
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
 import com.glycotwin.patient.data.remote.InvitationDto
 import com.glycotwin.patient.data.remote.UserDto
@@ -39,38 +53,43 @@ import com.glycotwin.patient.ui.components.SectionCard
 import com.glycotwin.patient.ui.components.StatusLabel
 import com.glycotwin.patient.ui.components.TactileButton
 import com.glycotwin.patient.ui.components.TactileOutlinedButton
+import com.glycotwin.patient.ui.components.TintedSectionCard
 import com.glycotwin.patient.ui.theme.Blush
+import com.glycotwin.patient.ui.theme.BrandMint
+import com.glycotwin.patient.ui.theme.BrandTeal
+import com.glycotwin.patient.ui.theme.GlycoWhite
+import com.glycotwin.patient.ui.theme.Ink
 import com.glycotwin.patient.ui.theme.MutedInk
 import com.glycotwin.patient.ui.theme.Pine
 import com.glycotwin.patient.ui.theme.Tomato
 import com.glycotwin.patient.ui.viewmodel.InvitationAction
 import com.glycotwin.patient.ui.viewmodel.PatientState
 import com.glycotwin.patient.ui.viewmodel.PatientViewModel
-import java.time.Instant
+import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 @Composable
 fun DashboardScreen(user: UserDto?, patientViewModel: PatientViewModel, onLogout: () -> Unit) {
     var selectedTab by remember { mutableIntStateOf(0) }
     val patientState by patientViewModel.state.collectAsState()
+    var homeVisited by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         patientViewModel.load()
     }
     LaunchedEffect(selectedTab) {
+        if (selectedTab == 0) {
+            if (homeVisited) patientViewModel.refreshHome()
+            homeVisited = true
+        }
         if (selectedTab == 2) patientViewModel.refresh()
         if (selectedTab == 1) patientViewModel.loadReadings(refresh = true)
     }
     Scaffold(
         containerColor = com.glycotwin.patient.ui.theme.WarmOat,
         bottomBar = {
-            NavigationBar(containerColor = com.glycotwin.patient.ui.theme.GlycoWhite) {
-                NavigationBarItem(selected = selectedTab == 0, onClick = { selectedTab = 0 }, icon = { androidx.compose.material3.Icon(Icons.Default.Home, "Home") }, label = { Text("Home") })
-                NavigationBarItem(selected = selectedTab == 1, onClick = { selectedTab = 1 }, icon = { androidx.compose.material3.Icon(Icons.Default.Favorite, "Health") }, label = { Text("Health") })
-                NavigationBarItem(selected = selectedTab == 2, onClick = { selectedTab = 2 }, icon = { androidx.compose.material3.Icon(Icons.Default.Groups, "Care team") }, label = { Text("Care team") })
-                NavigationBarItem(selected = selectedTab == 3, onClick = { selectedTab = 3 }, icon = { androidx.compose.material3.Icon(Icons.Default.ShowChart, "Trends") }, label = { Text("Trends") })
-                NavigationBarItem(selected = selectedTab == 4, onClick = { selectedTab = 4 }, icon = { androidx.compose.material3.Icon(Icons.Default.DirectionsWalk, "Lifestyle") }, label = { Text("Lifestyle") })
-            }
+            GlycoBottomNavigation(selectedTab) { selectedTab = it }
         },
     ) { paddingValues ->
         when (selectedTab) {
@@ -79,16 +98,85 @@ fun DashboardScreen(user: UserDto?, patientViewModel: PatientViewModel, onLogout
                 user,
                 patientState,
                 onCareTeam = { selectedTab = 2 },
-                onProfile = { selectedTab = 5 },
+                onHealth = { selectedTab = 1 },
+                onMedication = { selectedTab = 5 },
+                onLifestyle = { selectedTab = 4 },
+                onProfile = { selectedTab = 6 },
             )
-            1 -> HealthRecordsScreen(patientViewModel, Modifier.padding(paddingValues))
+            1 -> HealthRecordsScreen(
+                patientViewModel,
+                Modifier.padding(paddingValues),
+            )
             2 -> CareTeamContent(Modifier.padding(paddingValues), patientState, patientViewModel)
             3 -> HealthTrendsScreen(patientViewModel, Modifier.padding(paddingValues))
             4 -> LifestyleScreen(patientViewModel, Modifier.padding(paddingValues))
+            5 -> MedicationScreen(patientViewModel, Modifier.padding(paddingValues), onBack = { selectedTab = 1 })
             else -> ProfileScreen(patientViewModel, user, onLogout)
         }
     }
 }
+
+@Composable
+private fun GlycoBottomNavigation(selectedTab: Int, onTabSelected: (Int) -> Unit) {
+    val items = listOf(
+        NavigationDestination("Home", Icons.Default.Home),
+        NavigationDestination("Health", Icons.Default.Favorite),
+        NavigationDestination("Care", Icons.Default.Groups),
+        NavigationDestination("Trends", Icons.Default.ShowChart),
+        NavigationDestination("Lifestyle", Icons.Default.DirectionsWalk),
+        NavigationDestination("Meds", Icons.Default.Medication),
+    )
+    NavigationBar(containerColor = GlycoWhite) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+        ) {
+            items.forEachIndexed { index, item ->
+                val selected = selectedTab == index
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clickable { onTabSelected(index) }
+                        .padding(vertical = 6.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(3.dp),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .background(
+                                brush = if (selected) {
+                                    Brush.linearGradient(listOf(BrandMint, BrandTeal))
+                                } else {
+                                    Brush.linearGradient(listOf(Color.Transparent, Color.Transparent))
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                            )
+                            .padding(horizontal = 10.dp, vertical = 4.dp),
+                    ) {
+                        androidx.compose.material3.Icon(
+                            imageVector = item.icon,
+                            contentDescription = item.label,
+                            tint = if (selected) GlycoWhite else MutedInk,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                    Text(
+                        item.label,
+                        color = if (selected) Pine else MutedInk,
+                        fontSize = 10.sp,
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                        maxLines = 1,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private data class NavigationDestination(
+    val label: String,
+    val icon: androidx.compose.ui.graphics.vector.ImageVector,
+)
 
 @Composable
 private fun HomeContent(
@@ -96,6 +184,9 @@ private fun HomeContent(
     user: UserDto?,
     state: PatientState,
     onCareTeam: () -> Unit,
+    onHealth: () -> Unit,
+    onMedication: () -> Unit,
+    onLifestyle: () -> Unit,
     onProfile: () -> Unit,
 ) {
     val pendingCount = state.invitations.count { it.status == "pending" }
@@ -138,9 +229,139 @@ private fun HomeContent(
                 }
             }
         }
-        item { SectionCard("Health overview") { EmptyState("No health data yet", "Health information will appear here when it is available.", Blush) } }
+        item {
+            HealthOverview(
+                state = state,
+                onHealth = onHealth,
+                onMedication = onMedication,
+                onLifestyle = onLifestyle,
+            )
+        }
         state.confirmation?.let { confirmation -> item { Text(confirmation, color = Pine) } }
         state.error?.let { error -> item { Text(error, color = MaterialTheme.colorScheme.error) } }
+    }
+}
+
+@Composable
+private fun HealthOverview(
+        state: PatientState,
+        onHealth: () -> Unit,
+        onMedication: () -> Unit,
+        onLifestyle: () -> Unit,
+    ) {
+        val latestReading = state.readings.maxByOrNull { it.measuredAt.epochMillisOrMin() }
+        val previousReading = state.readings
+            .filter { it.id != latestReading?.id }
+            .maxByOrNull { it.measuredAt.epochMillisOrMin() }
+        val latestMeal = state.lifestyle.filter { it.type == "meal" }.maxByOrNull { it.occurredAt.epochMillisOrMin() }
+        val latestActivity = state.lifestyle.filter { it.type == "activity" }.maxByOrNull { it.occurredAt.epochMillisOrMin() }
+        val latestSleep = state.lifestyle.filter { it.type == "sleep" }.maxByOrNull { it.occurredAt.epochMillisOrMin() }
+        val latestSymptom = state.lifestyle.filter { it.type == "symptom" }.maxByOrNull { it.occurredAt.epochMillisOrMin() }
+        val isLoading = state.readingsLoading || state.medicationsLoading || state.lifestyleLoading
+        val hasData = latestReading != null || state.medications.isNotEmpty() || state.lifestyle.isNotEmpty()
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                "Health overview",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.SemiBold,
+            )
+            if (isLoading && !hasData) {
+                CircularProgressIndicator()
+            } else if (!hasData) {
+                EmptyState("No health data yet", "Health information will appear here when it is available.", Blush)
+            } else {
+                TintedSectionCard("Glucose", Icons.Default.Bloodtype, GlycoWhite, onClick = onHealth) {
+                    if (latestReading == null) {
+                        Text("No glucose readings yet", color = MutedInk)
+                    } else {
+                        Text("${latestReading.value} ${latestReading.unit}", style = MaterialTheme.typography.headlineMedium)
+                        Text("Latest reading · ${formatDateTime(latestReading.measuredAt)}", color = MutedInk)
+                        previousReading?.let {
+                            Text("Previous: ${it.value} ${it.unit} · ${formatDateTime(it.measuredAt)}", color = MutedInk)
+                        }
+                        val unitCounts = state.readings.groupingBy { it.unit }.eachCount()
+                        Text(
+                            unitCounts.entries.joinToString(" · ") { "${it.value} ${it.key} readings" },
+                            color = MutedInk,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
+                TintedSectionCard("Medication", Icons.Default.Medication, GlycoWhite, onClick = onMedication) {
+                    if (state.medications.isEmpty()) {
+                        Text("No active medications", color = MutedInk)
+                    } else {
+                        Text("${state.medications.size} active medication${if (state.medications.size == 1) "" else "s"}")
+                        state.medications.take(3).forEach { medication ->
+                            Text("${medication.name} · ${medication.dosage}", color = MutedInk)
+                            Text("${medication.frequency} · ${medication.scheduleTimes.joinToString()}", color = MutedInk, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+                TintedSectionCard("Lifestyle", Icons.Default.FavoriteBorder, GlycoWhite, onClick = onLifestyle) {
+                    LifestyleSummary(
+                        latestMeal = latestMeal,
+                        latestActivity = latestActivity,
+                        latestSleep = latestSleep,
+                        latestSymptom = latestSymptom,
+                        totalEntries = state.lifestyle.size,
+                    )
+                }
+            }
+            state.readingsError?.let { Text("Glucose unavailable: $it", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            state.medicationError?.let { Text("Medication unavailable: $it", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+            state.lifestyleError?.let { Text("Lifestyle unavailable: $it", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall) }
+        }
+    }
+
+@Composable
+private fun LifestyleSummary(
+    latestMeal: com.glycotwin.patient.data.remote.LifestyleEntryDto?,
+    latestActivity: com.glycotwin.patient.data.remote.LifestyleEntryDto?,
+    latestSleep: com.glycotwin.patient.data.remote.LifestyleEntryDto?,
+    latestSymptom: com.glycotwin.patient.data.remote.LifestyleEntryDto?,
+    totalEntries: Int,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        LifestyleCategorySummary(
+            label = "Meal",
+            value = latestMeal?.let { "${it.description ?: it.mealType ?: "Recorded"} · ${formatDateTime(it.occurredAt)}" },
+        )
+        LifestyleCategorySummary(
+            label = "Activity",
+            value = latestActivity?.let { "${it.activityType ?: it.description ?: "Recorded"} · ${formatDateTime(it.occurredAt)}" },
+        )
+        LifestyleCategorySummary(
+            label = "Sleep",
+            value = latestSleep?.let { "${it.sleepDurationMinutes ?: 0} minutes · ${formatDateTime(it.occurredAt)}" },
+        )
+        LifestyleCategorySummary(
+            label = "Symptom",
+            value = latestSymptom?.let { "${it.description ?: "Recorded"} · ${formatDateTime(it.occurredAt)}" },
+        )
+        Text(
+            "$totalEntries recorded entr${if (totalEntries == 1) "y" else "ies"}",
+            color = MutedInk,
+            style = MaterialTheme.typography.bodySmall,
+        )
+    }
+}
+
+@Composable
+private fun LifestyleCategorySummary(label: String, value: String?) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
+    ) {
+        Text(label, style = MaterialTheme.typography.labelLarge, color = Pine, fontWeight = FontWeight.Bold)
+        Text(value ?: "No record yet", color = if (value == null) MutedInk else Ink)
     }
 }
 
@@ -210,7 +431,12 @@ private fun statusColor(status: String) = when (status) {
 }
 
 private fun formatDate(value: String): String = runCatching {
-    DateTimeFormatter.ofPattern("d MMM yyyy").format(
-        Instant.parse(value).atZone(ZoneId.systemDefault()),
-    )
+    DateTimeFormatter.ofPattern("d MMM yyyy").format(OffsetDateTime.parse(value).atZoneSameInstant(ZoneId.systemDefault()))
 }.getOrDefault(value)
+
+private fun formatDateTime(value: String): String = runCatching {
+    DateTimeFormatter.ofPattern("d MMM yyyy, h:mm a", Locale.getDefault())
+        .format(OffsetDateTime.parse(value).atZoneSameInstant(ZoneId.systemDefault()))
+}.getOrDefault(value)
+
+private fun String.epochMillisOrMin(): Long = runCatching { OffsetDateTime.parse(this).toInstant().toEpochMilli() }.getOrDefault(Long.MIN_VALUE)

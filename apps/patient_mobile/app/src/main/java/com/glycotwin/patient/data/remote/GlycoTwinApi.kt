@@ -51,6 +51,9 @@ interface GlycoTwinApi {
     @POST("auth/logout")
     suspend fun logout(@Body body: RefreshRequest): Response<Unit>
 
+    @retrofit2.http.DELETE("auth/account")
+    suspend fun deleteAccount(@retrofit2.http.Header("Authorization") authorization: String): Response<Unit>
+
     @GET("auth/me")
     suspend fun me(@retrofit2.http.Header("Authorization") authorization: String): Response<ApiResponse<UserDto>>
 
@@ -111,6 +114,21 @@ interface GlycoTwinApi {
         @retrofit2.http.Path("id") id: String,
         @retrofit2.http.Header("Authorization") authorization: String,
     ): Response<Unit>
+
+    @retrofit2.http.POST("patient/medications")
+    suspend fun createMedication(@retrofit2.http.Body body: MedicationInput, @retrofit2.http.Header("Authorization") authorization: String): Response<ApiResponse<MedicationDto>>
+    @retrofit2.http.GET("patient/medications")
+    suspend fun medications(@retrofit2.http.Query("status") status: String, @retrofit2.http.Header("Authorization") authorization: String): Response<ApiResponse<MedicationPageDto>>
+    @retrofit2.http.PATCH("patient/medications/{id}")
+    suspend fun updateMedication(@retrofit2.http.Path("id") id: String, @retrofit2.http.Body body: MedicationInput, @retrofit2.http.Header("Authorization") authorization: String): Response<ApiResponse<MedicationDto>>
+    @retrofit2.http.DELETE("patient/medications/{id}")
+    suspend fun deleteMedication(@retrofit2.http.Path("id") id: String, @retrofit2.http.Header("Authorization") authorization: String): Response<Unit>
+    @retrofit2.http.POST("patient/medications/{id}/discontinue")
+    suspend fun discontinueMedication(@retrofit2.http.Path("id") id: String, @retrofit2.http.Header("Authorization") authorization: String): Response<ApiResponse<MedicationDto>>
+    @retrofit2.http.GET("patient/medications/{id}/doses")
+    suspend fun medicationDoses(@retrofit2.http.Path("id") id: String, @retrofit2.http.Header("Authorization") authorization: String): Response<ApiResponse<MedicationDosePageDto>>
+    @retrofit2.http.POST("patient/medications/{id}/doses")
+    suspend fun createMedicationDose(@retrofit2.http.Path("id") id: String, @retrofit2.http.Body body: MedicationDoseInput, @retrofit2.http.Header("Authorization") authorization: String): Response<ApiResponse<MedicationDoseDto>>
 
     @retrofit2.http.PATCH("patient/lifestyle/{id}")
     suspend fun updateLifestyle(
@@ -186,6 +204,38 @@ data class LifestyleEntryInput(
     val sleepDurationMinutes: Int? = null,
     val notes: String? = null,
 )
+data class MedicationDto(
+    val id: String,
+    val patientId: String,
+    val name: String,
+    val dosage: String,
+    val frequency: String,
+    val scheduleTimes: List<String>,
+    val startDate: String,
+    val endDate: String?,
+    val instructions: String?,
+    val status: String,
+)
+data class MedicationPageDto(val items: List<MedicationDto>, val page: Int, val limit: Int)
+data class MedicationInput(
+    val name: String,
+    val dosage: String,
+    val frequency: String,
+    val scheduleTimes: List<String>,
+    val startDate: String,
+    val endDate: String? = null,
+    val instructions: String? = null,
+)
+data class MedicationDoseDto(
+    val id: String,
+    val medicationId: String,
+    val patientId: String,
+    val scheduledAt: String,
+    val takenAt: String?,
+    val status: String,
+)
+data class MedicationDosePageDto(val items: List<MedicationDoseDto>, val page: Int, val limit: Int)
+data class MedicationDoseInput(val scheduledAt: String, val takenAt: String?, val status: String)
 data class GlucoseReadingInput(
     val value: String,
     val unit: String,

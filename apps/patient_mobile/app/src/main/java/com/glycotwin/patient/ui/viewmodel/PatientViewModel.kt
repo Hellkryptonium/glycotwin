@@ -13,6 +13,10 @@ import com.glycotwin.patient.data.remote.DailyGlucoseDto
 import com.glycotwin.patient.data.remote.GlucoseUnitSummaryDto
 import com.glycotwin.patient.data.remote.LifestyleEntryDto
 import com.glycotwin.patient.data.remote.LifestyleEntryInput
+import com.glycotwin.patient.data.remote.MedicationDto
+import com.glycotwin.patient.data.remote.MedicationInput
+import com.glycotwin.patient.data.remote.MedicationDoseDto
+import com.glycotwin.patient.data.remote.MedicationDoseInput
 import com.glycotwin.patient.data.repository.ApiException
 import com.glycotwin.patient.data.repository.PatientRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,6 +50,14 @@ data class PatientState(
     val lifestyleLoading: Boolean = false,
     val lifestyleError: String? = null,
     val lifestyleSaving: Boolean = false,
+    val medications: List<MedicationDto> = emptyList(),
+    val medicationsLoading: Boolean = false,
+    val medicationSaving: Boolean = false,
+    val medicationError: String? = null,
+    val medicationDoses: List<MedicationDoseDto> = emptyList(),
+    val accountDeleting: Boolean = false,
+    val accountDeleted: Boolean = false,
+    val accountDeletionError: String? = null,
 )
 
 class PatientViewModel(private val repository: PatientRepository) : ViewModel() {
@@ -53,12 +65,63 @@ class PatientViewModel(private val repository: PatientRepository) : ViewModel() 
     val state: StateFlow<PatientState> = _state.asStateFlow()
     private var analyticsRequestId = 0
 
+    fun deleteAccount() {
+        if (_state.value.accountDeleting) return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(accountDeleting = true, accountDeletionError = null)
+            repository.deleteAccount()
+                .onSuccess { _state.value = _state.value.copy(accountDeleting = false, accountDeleted = true) }
+                .onFailure { error ->
+                    _state.value = _state.value.copy(accountDeleting = false, accountDeletionError = error.toUserMessage())
+                }
+        }
+    }
+
     fun load() {
         fetch(refresh = false)
         loadProfile()
         loadReadings()
         loadAnalytics()
         loadLifestyle()
+        loadMedications()
+    }
+
+    fun loadMedications() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(medicationsLoading = true, medicationError = null)
+            repository.medications().onSuccess { page -> _state.value = _state.value.copy(medications = page.items, medicationsLoading = false) }
+                .onFailure { error -> _state.value = _state.value.copy(medicationsLoading = false, medicationError = error.toUserMessage()) }
+        }
+    }
+
+    fun saveMedication(id: String?, input: MedicationInput) {
+        if (_state.value.medicationSaving) return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(medicationSaving = true, medicationError = null)
+            val result = if (id == null) repository.createMedication(input) else repository.updateMedication(id, input)
+            result.onSuccess { _state.value = _state.value.copy(medicationSaving = false); loadMedications() }
+                .onFailure { error -> _state.value = _state.value.copy(medicationSaving = false, medicationError = error.toUserMessage()) }
+        }
+    }
+
+    fun discontinueMedication(id: String) {
+        viewModelScope.launch { repository.discontinueMedication(id).onSuccess { loadMedications() }.onFailure { error -> _state.value = _state.value.copy(medicationError = error.toUserMessage()) } }
+    }
+
+    fun deleteMedication(id: String) {
+        viewModelScope.launch { repository.deleteMedication(id).onSuccess { loadMedications() }.onFailure { error -> _state.value = _state.value.copy(medicationError = error.toUserMessage()) } }
+    }
+
+    fun loadMedicationDoses(id: String) {
+        viewModelScope.launch { repository.medicationDoses(id).onSuccess { page -> _state.value = _state.value.copy(medicationDoses = page.items) }.onFailure { error -> _state.value = _state.value.copy(medicationError = error.toUserMessage()) } }
+    }
+
+    fun recordMedicationDose(id: String, status: String) {
+        viewModelScope.launch {
+            val now = OffsetDateTime.now(ZoneOffset.UTC).toString()
+            repository.createMedicationDose(id, MedicationDoseInput(now, if (status == "taken") now else null, status))
+                .onSuccess { loadMedicationDoses(id) }.onFailure { error -> _state.value = _state.value.copy(medicationError = error.toUserMessage()) }
+        }
     }
 
     fun loadLifestyle() {
@@ -236,6 +299,13 @@ class PatientViewModel(private val repository: PatientRepository) : ViewModel() 
 
     fun refresh() {
         fetch(refresh = true)
+    }
+
+    fun refreshHome() {
+        fetch(refresh = true)
+        loadReadings(refresh = true)
+        loadMedications()
+        loadLifestyle()
     }
 
     private fun fetch(refresh: Boolean) {

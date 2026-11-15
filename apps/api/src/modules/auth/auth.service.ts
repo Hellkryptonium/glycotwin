@@ -168,6 +168,14 @@ export function createAuthService(dependencies: AuthDependencies): AuthService {
       }
     },
 
+    async deleteAccount(userId: string): Promise<void> {
+      const user = await dependencies.userRepository.findById(userId);
+      if (!user || !user.isActive) {
+        throw new AppError(401, 'UNAUTHORIZED', 'Authentication is required.');
+      }
+      await dependencies.authRepository.deleteAccount(userId);
+    },
+
     async getCurrentUser(userId: string): Promise<AuthenticatedUser> {
       const user = await dependencies.userService.getAuthenticatedUser(userId);
       if (!user || !user.isActive) {

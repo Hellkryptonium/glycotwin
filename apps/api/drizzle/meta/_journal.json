@@ -36,6 +36,13 @@
       "when": 1793920185913,
       "tag": "0004_strong_dark_phoenix",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794234664080,
+      "tag": "0005_sour_wasp",
+      "breakpoints": true
     }
   ]
 }

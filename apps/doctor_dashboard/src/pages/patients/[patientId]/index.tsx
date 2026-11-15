@@ -5,7 +5,7 @@ import { AppShell } from '../../../components/layout/app-shell';
 import styles from './patient-detail.module.css';
 import { StateMessage } from '../../../components/feedback/state-message';
 import { normalizeApiError } from '../../../services/api';
-import { usePatientGlucoseReadings, usePatientLifestyle, usePatientProfile } from '../../../queries/patients.queries';
+import { usePatientGlucoseReadings, usePatientLifestyle, usePatientMedicationDoses, usePatientMedications, usePatientProfile } from '../../../queries/patients.queries';
 import { usePatientGlucoseAnalytics } from '../../../queries/patients.queries';
 import type { AnalyticsRange } from '../../../types/api';
 import { useState } from 'react';
@@ -44,6 +44,7 @@ export default function PatientDetailPage() {
     ...(from && { from: `${from}T00:00:00.000Z` }),
     ...(to && { to: `${to}T23:59:59.999Z` }),
   });
+  const medications = usePatientMedications(patientId);
   const patient = profile.data;
   return <AppShell><section className={styles.page}>
     <Link href="/patients" className={styles.back}><ArrowLeft size={17} />Back to patients</Link>
@@ -88,5 +89,23 @@ export default function PatientDetailPage() {
         lifestyle.data?.items.length ? <div className={styles.daily}>{lifestyle.data.items.map((entry) => <div key={entry.id}><span>{entry.type} · {new Date(entry.occurredAt).toLocaleString()}</span><strong>{entry.description || entry.activityType || entry.mealType || (entry.sleepDurationMinutes ? `${entry.sleepDurationMinutes} minutes` : '')}</strong><small>{entry.durationMinutes ? `${entry.durationMinutes} minutes` : entry.notes || ''}</small></div>)}</div> :
         <StateMessage kind="empty">No lifestyle activity in this date range.</StateMessage>}
     </section>}
-  </section></AppShell>;
+  </section>    {patient && <section className={styles.records}>
+      <div className={styles.recordsHead}><div><span className={styles.label}>Medication</span><h3>Medication tracking</h3></div></div>
+      {medications.isLoading ? <StateMessage kind="loading">Loading medications</StateMessage> :
+        medications.error ? <StateMessage kind="error">{normalizeApiError(medications.error).message}</StateMessage> :
+        medications.data?.items.length ? <div className={styles.readings}>{medications.data.items.map((medication) => <MedicationCard key={medication.id} patientId={patientId} medication={medication} />)}</div> :
+        <StateMessage kind="empty">No medication records.</StateMessage>}
+    </section>}
+  </AppShell>;
+}
+
+function MedicationCard({ patientId, medication }: { patientId: string; medication: import('../../../types/api').Medication }) {
+  const doses = usePatientMedicationDoses(patientId, medication.id);
+  const stats = doses.data?.stats ?? [];
+  return <div className={styles.reading}>
+    <strong>{medication.name} · {medication.dosage}</strong>
+    <span>{medication.frequency} · {medication.scheduleTimes.join(', ')} · {medication.status}</span>
+    {medication.instructions && <p>{medication.instructions}</p>}
+    {doses.isLoading ? <small>Loading dose history</small> : doses.error ? <small>{normalizeApiError(doses.error).message}</small> : <small>{stats.map((stat) => `${stat.status}: ${stat.count}`).join(' · ') || 'No recorded doses'}</small>}
+  </div>;
 }

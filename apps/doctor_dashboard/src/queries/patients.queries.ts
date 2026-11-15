@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getConnectedPatients, getPatientGlucoseAnalytics, getPatientGlucoseReadings, getPatientLifestyle, getPatientProfile, searchPatients } from '../services/patients.api';
+import { getConnectedPatients, getPatientGlucoseAnalytics, getPatientGlucoseReadings, getPatientLifestyle, getPatientMedicationDoses, getPatientMedications, getPatientProfile, searchPatients } from '../services/patients.api';
 import type { AnalyticsRange } from '../types/api';
 import { queryKeys } from './keys';
 import { useAuthStore } from '../stores/auth.store';
@@ -58,6 +58,18 @@ export function usePatientLifestyle(patientId: string, filters: { page: number; 
     enabled: Boolean(patientId && accessToken && user?.role === 'doctor'),
     retry: false,
   });
+}
+
+export function usePatientMedications(patientId: string) {
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const user = useAuthStore((state) => state.user);
+  return useQuery({ queryKey: queryKeys.patientMedications(patientId), queryFn: () => getPatientMedications(patientId), enabled: Boolean(patientId && accessToken && user?.role === 'doctor'), retry: false });
+}
+
+export function usePatientMedicationDoses(patientId: string, medicationId: string) {
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const user = useAuthStore((state) => state.user);
+  return useQuery({ queryKey: queryKeys.patientMedicationDoses(patientId, medicationId), queryFn: () => getPatientMedicationDoses(patientId, medicationId), enabled: Boolean(patientId && medicationId && accessToken && user?.role === 'doctor'), retry: false });
 }
 
 export function useCreateInvitation() {

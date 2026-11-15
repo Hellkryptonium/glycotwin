@@ -8,6 +8,7 @@ export interface AuthControllerService {
   login(email: string, password: string): Promise<unknown>;
   refresh(refreshToken: string): Promise<unknown>;
   logout(refreshToken: string, userId: string): Promise<void>;
+  deleteAccount(userId: string): Promise<void>;
   getCurrentUser(userId: string): Promise<AuthenticatedUser>;
 }
 
@@ -64,5 +65,14 @@ export function createAuthController(service: AuthControllerService) {
     }
   };
 
-  return { registerDoctor, registerPatient, login, refresh, logout, me };
+  const deleteAccount: RequestHandler = async (_request, response, next) => {
+    try {
+      await service.deleteAccount(response.locals.authenticatedUser!.sub);
+      response.status(204).send();
+    } catch (error) {
+      next(error);
+    }
+  };
+
+  return { registerDoctor, registerPatient, login, refresh, logout, me, deleteAccount };
 }

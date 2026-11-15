@@ -7,6 +7,7 @@ import com.glycotwin.patient.data.remote.Credentials
 import com.glycotwin.patient.data.remote.GlycoTwinApi
 import com.glycotwin.patient.data.remote.RefreshRequest
 import com.glycotwin.patient.data.remote.UserDto
+import com.google.gson.Gson
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import retrofit2.Response
@@ -20,6 +21,7 @@ class ApiException(
 
 class AuthRepository(private val api: GlycoTwinApi, private val tokens: TokenStorage) {
     private val refreshMutex = Mutex()
+    private val gson = Gson()
 
     suspend fun register(email: String, password: String): Result<UserDto> =
         runCatching { request { api.register(Credentials(email, password)) }.body().requireData() }
@@ -47,6 +49,11 @@ class AuthRepository(private val api: GlycoTwinApi, private val tokens: TokenSto
         tokens.clear()
     }
 
+    suspend fun deleteAccount(): Result<Unit> = runCatching {
+        authenticatedUnit { api.deleteAccount("Bearer ${tokens.accessToken() ?: throw ApiException("Session expired")}") }
+        tokens.clear()
+    }
+
     suspend fun refreshAccess(): AuthTokensDto = refreshMutex.withLock {
         val refresh = tokens.refreshToken() ?: throw ApiException("Session expired")
         val result = request { api.refresh(RefreshRequest(refresh)) }.body().requireData()
@@ -62,6 +69,22 @@ class AuthRepository(private val api: GlycoTwinApi, private val tokens: TokenSto
         }
         return response
     }
+
+    private suspend fun authenticatedUnit(call: suspend () -> Response<Unit>) {
+        var response = call()
+        if (response.code() == 401 && tokens.refreshToken() != null) {
+            refreshAccess()
+            response = call()
+        }
+        if (!response.isSuccessful) {
+            val body = response.errorBody()?.string()
+            val message = runCatching { gson.fromJson(body, ErrorEnvelope::class.java)?.error?.message }.getOrNull()
+            throw ApiException(message ?: body ?: "Request failed", response.code())
+        }
+    }
+
+    private data class ErrorEnvelope(val error: ErrorBody?)
+    private data class ErrorBody(val message: String?)
 
     private suspend fun <T> request(call: suspend () -> Response<ApiResponse<T>>): Response<ApiResponse<T>> {
         val response = call()

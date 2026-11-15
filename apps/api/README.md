@@ -58,6 +58,7 @@ All application endpoints use `/api/v1`.
 - Glucose records: patient CRUD under `/patient/glucose-readings`; doctor read-only history under `/doctor/patients/:patientId/glucose-readings`.
 - Glucose analytics: `GET /patient/analytics/glucose` and `GET /doctor/patients/:patientId/analytics/glucose`, with `range=7d|30d|90d`. The response contains actual readings, latest value, descriptive summary statistics, and daily averages/counts. Mixed units are returned in `byUnit` and are not silently converted.
 - Lifestyle tracking: patient CRUD under `/patient/lifestyle/{meals,activities,sleep,symptoms}` and `/patient/lifestyle/timeline`; verified doctors can read `/doctor/patients/:patientId/lifestyle/timeline`. Entries are patient-owned and date-filterable.
+- Medication tracking: patients manage `/patient/medications` and `/patient/medications/:id/doses`; verified doctors can read `/doctor/patients/:patientId/medications` and dose history through active relationships. Medication and dose changes are audited.
 
 The authoritative request schemas and response types are in `src/modules/auth` and `src/modules/connections`.
 
@@ -74,5 +75,6 @@ npm test
 ```
 
 Analytics is read-only, uses UTC date buckets, and requires patient ownership or an active verified doctor relationship.
+Medication records are entered by patients only. The `0005_sour_wasp.sql` forward migration adds `medications` and `medication_doses`; no reminders, recommendations, or clinical adherence interpretation are provided.
 
 The test suite injects database readiness and does not require a live PostgreSQL server for the covered cases.

@@ -140,3 +140,31 @@ export interface LifestylePage {
   page: number;
   limit: number;
 }
+
+export interface Medication {
+  id: string;
+  patientId: string;
+  name: string;
+  dosage: string;
+  frequency: string;
+  scheduleTimes: string[];
+  startDate: string;
+  endDate: string | null;
+  instructions: string | null;
+  status: 'active' | 'discontinued';
+}
+export interface MedicationPage { items: Medication[]; page: number; limit: number; }
+export interface MedicationDose {
+  id: string;
+  medicationId: string;
+  patientId: string;
+  scheduledAt: string;
+  takenAt: string | null;
+  status: 'taken' | 'skipped' | 'missed';
+}
+export interface MedicationDosePage {
+  items: MedicationDose[];
+  page: number;
+  limit: number;
+  stats: Array<{ status: MedicationDose['status']; count: number }>;
+}

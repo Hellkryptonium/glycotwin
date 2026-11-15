@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { createHealthRouter } from '../modules/health/health.routes.js';
 import type { HealthService } from '../modules/health/health.service.js';
 
-export function createRoutes(healthService: HealthService, authRouter?: Router, connectionRouter?: Router, patientProfileRouter?: Router, glucoseRouter?: Router, analyticsRouter?: Router, lifestyleRouter?: Router): Router {
+export function createRoutes(healthService: HealthService, authRouter?: Router, connectionRouter?: Router, patientProfileRouter?: Router, glucoseRouter?: Router, analyticsRouter?: Router, lifestyleRouter?: Router, medicationRouter?: Router): Router {
   const router = Router();
   const healthRouter = createHealthRouter(healthService);
 
@@ -25,6 +25,9 @@ export function createRoutes(healthService: HealthService, authRouter?: Router, 
   }
   if (lifestyleRouter) {
     router.use('/api/v1', lifestyleRouter);
+  }
+  if (medicationRouter) {
+    router.use('/api/v1', medicationRouter);
   }
 
   return router;

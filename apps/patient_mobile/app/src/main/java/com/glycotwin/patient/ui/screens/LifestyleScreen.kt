@@ -9,13 +9,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,6 +27,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.glycotwin.patient.data.remote.LifestyleEntryInput
 import com.glycotwin.patient.data.remote.LifestyleEntryDto
@@ -34,6 +38,7 @@ import com.glycotwin.patient.ui.components.SectionCard
 import com.glycotwin.patient.ui.components.TactileButton
 import com.glycotwin.patient.ui.components.TactileOutlinedButton
 import com.glycotwin.patient.ui.theme.MutedInk
+import com.glycotwin.patient.ui.theme.Ink
 import com.glycotwin.patient.ui.viewmodel.PatientViewModel
 import java.time.OffsetDateTime
 import java.time.ZoneOffset
@@ -49,6 +54,7 @@ fun LifestyleScreen(viewModel: PatientViewModel, modifier: Modifier = Modifier) 
     var duration by remember { mutableStateOf("") }
     var sleepDuration by remember { mutableStateOf("") }
     var editing by remember { mutableStateOf<LifestyleEntryDto?>(null) }
+    var showForm by remember { mutableStateOf(false) }
     LazyColumn(
         modifier.fillMaxSize().padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -60,8 +66,10 @@ fun LifestyleScreen(viewModel: PatientViewModel, modifier: Modifier = Modifier) 
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 listOf("meal", "activity", "sleep", "symptom").forEach { option ->
-                    LifestyleTab(option) {
+                    LifestyleTab(option, selected = type == option) {
                         type = option
+                        editing = null
+                        showForm = false
                         description = ""
                         if (option == "activity" && activityType.isBlank()) activityType = "Walking"
                         customActivity = ""
@@ -72,92 +80,175 @@ fun LifestyleScreen(viewModel: PatientViewModel, modifier: Modifier = Modifier) 
             }
         }
         item {
-            SectionCard("Add $type") {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    if (type == "meal") {
-                        LifestyleDropdown(
-                            label = "Meal type",
-                            value = mealType.replaceFirstChar { it.uppercase() },
-                            options = listOf("Breakfast", "Lunch", "Snack", "Dinner"),
-                            onSelected = { mealType = it.lowercase() },
-                        )
-                    }
-                    if (type == "activity") {
-                        LifestyleDropdown(
-                            label = "Activity type",
-                            value = if (activityType == "Custom") "Custom" else activityType,
-                            options = listOf("Walking", "Running", "Cycling", "Swimming", "Yoga", "Strength training", "Sports", "Custom"),
-                            onSelected = {
-                                activityType = it
-                                if (it != "Custom") customActivity = ""
-                            },
-                        )
-                        if (activityType == "Custom") {
-                            OutlinedTextField(
-                                customActivity,
-                                { customActivity = it },
-                                Modifier.fillMaxWidth(),
-                                label = { Text("Custom activity") },
-                                singleLine = true,
+            TactileButton(
+                "Add ${type.displayName()}",
+                {
+                    editing = null
+                    description = ""
+                    customActivity = ""
+                    duration = ""
+                    sleepDuration = ""
+                    showForm = true
+                },
+                Modifier.fillMaxWidth(),
+            )
+        }
+        if (showForm) {
+            item {
+                SectionCard(if (editing == null) "Add ${type.displayName()}" else "Edit ${type.displayName()}") {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (type == "meal") {
+                            LifestyleDropdown(
+                                label = "Meal type",
+                                value = mealType.replaceFirstChar { it.uppercase() },
+                                options = listOf("Breakfast", "Lunch", "Snack", "Dinner"),
+                                onSelected = { mealType = it.lowercase() },
                             )
                         }
-                        OutlinedTextField(duration, { duration = it }, Modifier.fillMaxWidth(), label = { Text("Duration (minutes)") })
+                        if (type == "activity") {
+                            LifestyleDropdown(
+                                label = "Activity type",
+                                value = if (activityType == "Custom") "Custom" else activityType,
+                                options = listOf("Walking", "Running", "Cycling", "Swimming", "Yoga", "Strength training", "Sports", "Custom"),
+                                onSelected = {
+                                    activityType = it
+                                    if (it != "Custom") customActivity = ""
+                                },
+                            )
+                            if (activityType == "Custom") {
+                                OutlinedTextField(
+                                    customActivity,
+                                    { customActivity = it },
+                                    Modifier.fillMaxWidth(),
+                                    label = { Text("Custom activity") },
+                                    singleLine = true,
+                                )
+                            }
+                            OutlinedTextField(duration, { duration = it }, Modifier.fillMaxWidth(), label = { Text("Duration (minutes)") })
+                        }
+                        if (type == "sleep") OutlinedTextField(sleepDuration, { sleepDuration = it }, Modifier.fillMaxWidth(), label = { Text("Sleep duration (minutes)") })
+                        OutlinedTextField(description, { description = it }, Modifier.fillMaxWidth(), label = { Text(if (type == "symptom") "Symptom" else "Description") })
+                        TactileButton(if (state.lifestyleSaving) "Saving..." else if (editing == null) "Save entry" else "Update entry", {
+                            val activityMinutes = duration.toDurationMinutes()
+                            val sleepMinutes = sleepDuration.toSleepMinutes()
+                            val input = LifestyleEntryInput(
+                                type = type,
+                                occurredAt = OffsetDateTime.now(ZoneOffset.UTC).toString(),
+                                mealType = if (type == "meal") mealType else null,
+                                description = description.ifBlank { null },
+                                activityType = if (type == "activity") {
+                                    (if (activityType == "Custom") customActivity else activityType).ifBlank { null }
+                                } else null,
+                                durationMinutes = if (type == "activity") activityMinutes else null,
+                                sleepDurationMinutes = if (type == "sleep") sleepMinutes else null,
+                            )
+                            editing?.let { viewModel.updateLifestyle(it.id, input) } ?: viewModel.addLifestyle(input)
+                            description = ""
+                            editing = null
+                            showForm = false
+                        }, Modifier.fillMaxWidth())
                     }
-                    if (type == "sleep") OutlinedTextField(sleepDuration, { sleepDuration = it }, Modifier.fillMaxWidth(), label = { Text("Sleep duration (minutes)") })
-                    OutlinedTextField(description, { description = it }, Modifier.fillMaxWidth(), label = { Text(if (type == "symptom") "Symptom" else "Description") })
-                    TactileButton(if (state.lifestyleSaving) "Saving..." else if (editing == null) "Save entry" else "Update entry", {
-                        val activityMinutes = duration.toDurationMinutes()
-                        val sleepMinutes = sleepDuration.toSleepMinutes()
-                        val input = LifestyleEntryInput(
-                            type = type,
-                            occurredAt = OffsetDateTime.now(ZoneOffset.UTC).toString(),
-                            mealType = if (type == "meal") mealType else null,
-                            description = description.ifBlank { null },
-                            activityType = if (type == "activity") {
-                                (if (activityType == "Custom") customActivity else activityType).ifBlank { null }
-                            } else null,
-                            durationMinutes = if (type == "activity") activityMinutes else null,
-                            sleepDurationMinutes = if (type == "sleep") sleepMinutes else null,
-                        )
-                        editing?.let { viewModel.updateLifestyle(it.id, input) } ?: viewModel.addLifestyle(input)
-                        description = ""
-                        editing = null
-                    }, Modifier.fillMaxWidth())
                 }
             }
-
         }
+        val selectedEntries = state.lifestyle.filter { it.type == type }
+        item { Text(type.historyTitle(), style = MaterialTheme.typography.titleLarge) }
         state.lifestyleError?.let { item { Text(it, color = MaterialTheme.colorScheme.error) } }
         if (state.lifestyleLoading) item { CircularProgressIndicator() }
-        if (!state.lifestyleLoading && state.lifestyle.isEmpty()) item { EmptyState("No lifestyle entries", "Your saved daily health activity will appear here.") }
-        items(state.lifestyle, key = { it.id }) { entry ->
-            SectionCard(entry.type.replaceFirstChar { it.uppercase() }) {
-                Text(entry.description ?: entry.activityType ?: entry.mealType ?: "${entry.sleepDurationMinutes} minutes")
-                Text(entry.occurredAt, color = MutedInk)
-                TactileOutlinedButton("Edit", {
-                    editing = entry
-                    type = entry.type
-                    description = entry.description.orEmpty()
-                    mealType = entry.mealType ?: mealType
-                    activityType = entry.activityType.orEmpty()
-                    customActivity = ""
-                    duration = entry.durationMinutes?.toString().orEmpty()
-                    sleepDuration = entry.sleepDurationMinutes?.toString().orEmpty()
-                })
-                TactileOutlinedButton("Delete", { viewModel.deleteLifestyle(entry.id) })
+        if (!state.lifestyleLoading && selectedEntries.isEmpty()) {
+            item { EmptyState("No ${type.displayName().lowercase()} history", "Your saved ${type.displayName().lowercase()} records will appear here.") }
+        } else {
+            selectedEntries.forEach { entry ->
+                item(key = entry.id) {
+                    LifestyleRecordCard(
+                        entry = entry,
+                        onEdit = {
+                            editing = it
+                            type = it.type
+                            description = it.description.orEmpty()
+                            mealType = it.mealType ?: mealType
+                            activityType = it.activityType.orEmpty()
+                            customActivity = ""
+                            duration = it.durationMinutes?.toString().orEmpty()
+                            sleepDuration = it.sleepDurationMinutes?.toString().orEmpty()
+                            showForm = true
+                        },
+                        onDelete = viewModel::deleteLifestyle,
+                    )
+                }
             }
         }
-
     }
 }
 
 @Composable
-private fun RowScope.LifestyleTab(type: String, onClick: () -> Unit) {
-    TactileOutlinedButton(
-        type.replaceFirstChar { it.uppercase() },
-        onClick,
-        Modifier.weight(1f),
-    )
+private fun LifestyleRecordCard(
+    entry: LifestyleEntryDto,
+    onEdit: (LifestyleEntryDto) -> Unit,
+    onDelete: (String) -> Unit,
+) {
+    SectionCard(entryTitle(entry), Modifier.fillMaxWidth().padding(top = 4.dp)) {
+        Text(entryDescription(entry), style = MaterialTheme.typography.bodyLarge)
+        Text("Recorded: ${formatLifestyleDate(entry.occurredAt)}", color = MutedInk, style = MaterialTheme.typography.bodySmall)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+            TactileOutlinedButton("Edit", { onEdit(entry) }, Modifier.weight(1f))
+            TactileOutlinedButton("Delete", { onDelete(entry.id) }, Modifier.weight(1f))
+        }
+    }
+}
+
+private fun entryTitle(entry: LifestyleEntryDto): String = when (entry.type) {
+    "meal" -> entry.mealType?.replaceFirstChar { it.uppercase() } ?: "Meal"
+    "activity" -> entry.activityType ?: "Activity"
+    "sleep" -> "Sleep record"
+    else -> entry.description ?: "Symptom"
+}
+
+private fun entryDescription(entry: LifestyleEntryDto): String = when (entry.type) {
+    "activity" -> listOfNotNull(
+        entry.durationMinutes?.let { "$it minutes" },
+        entry.description,
+    ).joinToString(" · ").ifBlank { "Recorded activity" }
+    "sleep" -> listOfNotNull(
+        entry.sleepDurationMinutes?.let { "$it minutes" },
+        entry.description,
+    ).joinToString(" · ").ifBlank { "Recorded sleep" }
+    else -> entry.description ?: entry.activityType ?: entry.mealType ?: "Recorded entry"
+}
+
+private fun formatLifestyleDate(value: String): String = runCatching {
+    java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy · h:mm a")
+        .format(java.time.OffsetDateTime.parse(value).atZoneSameInstant(java.time.ZoneId.systemDefault()))
+}.getOrDefault(value)
+
+@Composable
+private fun RowScope.LifestyleTab(type: String, selected: Boolean, onClick: () -> Unit) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = Modifier.weight(1f),
+        shape = MaterialTheme.shapes.medium,
+        border = BorderStroke(2.dp, Ink),
+        colors = ButtonDefaults.outlinedButtonColors(
+            containerColor = if (selected) Color(0xFF00B894) else Color.Transparent,
+            contentColor = Ink,
+        ),
+        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+    ) {
+        Text(
+            type.displayName(),
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+            maxLines = 1,
+        )
+    }
+}
+
+private fun String.displayName(): String = replaceFirstChar { it.uppercase() }
+
+private fun String.historyTitle(): String = when (this) {
+    "meal" -> "Meals"
+    "activity" -> "Physical Activity"
+    "sleep" -> "Sleep"
+    else -> "Symptoms"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

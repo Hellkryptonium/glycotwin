@@ -14,6 +14,12 @@ import com.glycotwin.patient.data.remote.GlucoseAnalyticsDto
 import com.glycotwin.patient.data.remote.LifestyleEntryDto
 import com.glycotwin.patient.data.remote.LifestyleEntryInput
 import com.glycotwin.patient.data.remote.LifestylePageDto
+import com.glycotwin.patient.data.remote.MedicationDto
+import com.glycotwin.patient.data.remote.MedicationInput
+import com.glycotwin.patient.data.remote.MedicationPageDto
+import com.glycotwin.patient.data.remote.MedicationDoseDto
+import com.glycotwin.patient.data.remote.MedicationDoseInput
+import com.glycotwin.patient.data.remote.MedicationDosePageDto
 import com.google.gson.Gson
 import retrofit2.Response
 
@@ -30,6 +36,8 @@ class PatientRepository(private val api: GlycoTwinApi, private val tokens: Token
     suspend fun profile(): Result<PatientProfileResponse> = runCatching {
         authenticated { api.profile(auth()) }.body().requireData()
     }
+
+    suspend fun deleteAccount(): Result<Unit> = authRepository.deleteAccount()
 
     suspend fun updateProfile(input: PatientProfileUpdate): Result<PatientProfileResponse> = runCatching {
         authenticated { api.updateProfile(input, auth()) }.body().requireData()
@@ -65,6 +73,14 @@ class PatientRepository(private val api: GlycoTwinApi, private val tokens: Token
     suspend fun updateLifestyle(id: String, input: LifestyleEntryInput): Result<LifestyleEntryDto> = runCatching {
         authenticated { api.updateLifestyle(id, input, auth()) }.body().requireData()
     }
+
+    suspend fun medications(): Result<MedicationPageDto> = runCatching { authenticated { api.medications("active", auth()) }.body().requireData() }
+    suspend fun createMedication(input: MedicationInput): Result<MedicationDto> = runCatching { authenticated { api.createMedication(input, auth()) }.body().requireData() }
+    suspend fun updateMedication(id: String, input: MedicationInput): Result<MedicationDto> = runCatching { authenticated { api.updateMedication(id, input, auth()) }.body().requireData() }
+    suspend fun deleteMedication(id: String): Result<Unit> = runCatching { authenticatedUnit { api.deleteMedication(id, auth()) } }
+    suspend fun discontinueMedication(id: String): Result<MedicationDto> = runCatching { authenticated { api.discontinueMedication(id, auth()) }.body().requireData() }
+    suspend fun medicationDoses(id: String): Result<MedicationDosePageDto> = runCatching { authenticated { api.medicationDoses(id, auth()) }.body().requireData() }
+    suspend fun createMedicationDose(id: String, input: MedicationDoseInput): Result<MedicationDoseDto> = runCatching { authenticated { api.createMedicationDose(id, input, auth()) }.body().requireData() }
 
     suspend fun createGlucoseReading(input: GlucoseReadingInput): Result<GlucoseReadingDto> = runCatching {
         authenticated { api.createGlucoseReading(input, auth()) }.body().requireData()

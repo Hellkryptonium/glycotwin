@@ -14,6 +14,7 @@ import { createConnectionModule } from './modules/connections/connection.module.
 import { createPatientProfileModule } from './modules/patients/profile.module.js';
 import { createGlucoseModule } from './modules/health-records/glucose.module.js';
 import { createLifestyleModule } from './modules/lifestyle/lifestyle.module.js';
+import { createMedicationModule } from './modules/medications/medication.module.js';
 import { createRoutes } from './routes/index.js';
 
 export interface AppOptions {
@@ -47,6 +48,7 @@ export function createApp(options: AppOptions = {}) {
     ? undefined
     : options.analyticsRouter ?? glucoseModule?.analyticsRouter;
   const lifestyleRouter = authModule ? createLifestyleModule(getDatabase(), authModule.service).router : undefined;
+  const medicationRouter = authModule ? createMedicationModule(getDatabase(), authModule.service).router : undefined;
   const app = express();
 
   app.use(helmet());
@@ -56,7 +58,7 @@ export function createApp(options: AppOptions = {}) {
   app.use(pinoHttp({ redact: ['req.headers.authorization', 'req.headers.cookie'] }));
   app.use(requestIdMiddleware);
   app.use(rateLimit({ windowMs: 60_000, limit: 100, standardHeaders: 'draft-8', legacyHeaders: false }));
-  app.use(createRoutes(createHealthService(databaseHealthCheck), authModule?.router, connectionRouter, patientProfileRouter, glucoseRouter, analyticsRouter, lifestyleRouter));
+  app.use(createRoutes(createHealthService(databaseHealthCheck), authModule?.router, connectionRouter, patientProfileRouter, glucoseRouter, analyticsRouter, lifestyleRouter, medicationRouter));
 
   if (options.additionalRoutes) {
     app.use(options.additionalRoutes);

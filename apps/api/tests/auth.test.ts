@@ -117,6 +117,12 @@ function createHarness() {
       refreshTokens.set(input.id, { ...input, revokedAt: null, createdAt: new Date() });
       return true;
     },
+    async deleteAccount(userId) {
+      users.delete(userId);
+      for (const [id, token] of refreshTokens.entries()) {
+        if (token.userId === userId) refreshTokens.delete(id);
+      }
+    },
   };
 
   const service = createAuthService({
@@ -326,5 +332,26 @@ describe('authentication', () => {
     const logout = await request(harness.app).post('/api/v1/auth/logout').set('authorization', `Bearer ${tokens.accessToken}`).send({ refreshToken: tokens.refreshToken });
     expect(logout.status).toBe(204);
     await expect(harness.service.refresh(tokens.refreshToken)).rejects.toMatchObject({ code: 'INVALID_REFRESH_TOKEN' });
+  });
+
+  it('deletes only the authenticated account', async () => {
+    const harness = createHarness();
+    const user: UserRecord = {
+      id: '00000000-0000-4000-8000-000000000005', email: 'delete@example.com', role: 'patient',
+      isActive: true, emailVerifiedAt: null, createdAt: new Date(), updatedAt: new Date(), passwordHash: 'hashed:x',
+    };
+    const otherUser: UserRecord = { ...user, id: '00000000-0000-4000-8000-000000000006', email: 'keep@example.com' };
+    harness.users.set(user.id, user);
+    harness.users.set(otherUser.id, otherUser);
+    const tokens = await harness.service.login(user.email, 'x');
+
+    const response = await request(harness.app)
+      .delete('/api/v1/auth/account')
+      .set('authorization', `Bearer ${tokens.accessToken}`);
+
+    expect(response.status).toBe(204);
+    expect(harness.users.has(user.id)).toBe(false);
+    expect(harness.users.has(otherUser.id)).toBe(true);
+    expect((await request(harness.app).get('/api/v1/auth/me').set('authorization', `Bearer ${tokens.accessToken}`)).status).toBe(401);
   });
 });
