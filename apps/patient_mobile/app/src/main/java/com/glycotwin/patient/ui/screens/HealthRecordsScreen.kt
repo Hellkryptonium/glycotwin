@@ -4,6 +4,7 @@ import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,6 +20,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -48,11 +50,32 @@ private val units = listOf("mg/dL", "mmol/L")
 private val displayDateTime = DateTimeFormatter.ofPattern("d MMM yyyy, h:mm a", Locale.getDefault())
 
 @Composable
-fun HealthRecordsScreen(viewModel: PatientViewModel) {
+fun HealthRecordsScreen(
+    viewModel: PatientViewModel,
+    modifier: Modifier = Modifier,
+    openMedication: Boolean = false,
+    onMedicationOpened: () -> Unit = {},
+) {
     val state by viewModel.state.collectAsState()
+    var showMedications by rememberSaveable { mutableStateOf(false) }
     var editing by remember { mutableStateOf<GlucoseReadingDto?>(null) }
     var showForm by rememberSaveable { mutableStateOf(false) }
     var deleteTarget by remember { mutableStateOf<GlucoseReadingDto?>(null) }
+    LaunchedEffect(openMedication) {
+        if (openMedication) {
+            showMedications = true
+            onMedicationOpened()
+        }
+    }
+
+    if (showMedications) {
+        MedicationScreen(
+            viewModel = viewModel,
+            modifier = modifier,
+            onBack = { showMedications = false },
+        )
+        return
+    }
 
     if (showForm) {
         GlucoseForm(
@@ -81,8 +104,9 @@ fun HealthRecordsScreen(viewModel: PatientViewModel) {
     }
 
     LazyColumn(
-        modifier = Modifier.fillMaxSize().padding(20.dp),
+        modifier = modifier.fillMaxSize().padding(horizontal = 20.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(top = 20.dp, bottom = 24.dp),
     ) {
         item {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -92,6 +116,7 @@ fun HealthRecordsScreen(viewModel: PatientViewModel) {
         }
         item { Text("Health records", style = MaterialTheme.typography.headlineLarge) }
         item { TactileButton("Add glucose reading", { editing = null; showForm = true }, Modifier.fillMaxWidth()) }
+        item { TactileOutlinedButton("Add medication", { showMedications = true }, Modifier.fillMaxWidth()) }
         state.confirmation?.let { item { Text(it, color = Pine) } }
         state.readingsError?.let { item { Text(it, color = MaterialTheme.colorScheme.error) } }
         if (state.readingsLoading) {

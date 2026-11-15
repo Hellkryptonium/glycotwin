@@ -10,6 +10,16 @@ import com.glycotwin.patient.data.remote.PatientProfileUpdate
 import com.glycotwin.patient.data.remote.GlucosePageDto
 import com.glycotwin.patient.data.remote.GlucoseReadingDto
 import com.glycotwin.patient.data.remote.GlucoseReadingInput
+import com.glycotwin.patient.data.remote.GlucoseAnalyticsDto
+import com.glycotwin.patient.data.remote.LifestyleEntryDto
+import com.glycotwin.patient.data.remote.LifestyleEntryInput
+import com.glycotwin.patient.data.remote.LifestylePageDto
+import com.glycotwin.patient.data.remote.MedicationDto
+import com.glycotwin.patient.data.remote.MedicationInput
+import com.glycotwin.patient.data.remote.MedicationPageDto
+import com.glycotwin.patient.data.remote.MedicationDoseDto
+import com.glycotwin.patient.data.remote.MedicationDoseInput
+import com.glycotwin.patient.data.remote.MedicationDosePageDto
 import com.google.gson.Gson
 import retrofit2.Response
 
@@ -27,6 +37,8 @@ class PatientRepository(private val api: GlycoTwinApi, private val tokens: Token
         authenticated { api.profile(auth()) }.body().requireData()
     }
 
+    suspend fun deleteAccount(): Result<Unit> = authRepository.deleteAccount()
+
     suspend fun updateProfile(input: PatientProfileUpdate): Result<PatientProfileResponse> = runCatching {
         authenticated { api.updateProfile(input, auth()) }.body().requireData()
     }
@@ -34,6 +46,41 @@ class PatientRepository(private val api: GlycoTwinApi, private val tokens: Token
     suspend fun glucoseReadings(page: Int = 1, limit: Int = 20): Result<GlucosePageDto> = runCatching {
         authenticated { api.glucoseReadings(page, limit, auth()) }.body().requireData()
     }
+
+    suspend fun glucoseAnalytics(range: String): Result<GlucoseAnalyticsDto> = runCatching {
+        authenticated { api.glucoseAnalytics(range, auth()) }.body().requireData()
+    }
+
+    suspend fun lifestyleTimeline(page: Int = 1, limit: Int = 50): Result<LifestylePageDto> = runCatching {
+        authenticated { api.lifestyleTimeline(page, limit, auth()) }.body().requireData()
+    }
+
+    suspend fun createLifestyle(type: String, input: LifestyleEntryInput): Result<LifestyleEntryDto> = runCatching {
+        val endpoint = when (type) {
+            "meal" -> "meals"
+            "activity" -> "activities"
+            "sleep" -> "sleep"
+            "symptom" -> "symptoms"
+            else -> throw ApiException("Unsupported lifestyle type: $type")
+        }
+        authenticated { api.createLifestyle(endpoint, input, auth()) }.body().requireData()
+    }
+
+    suspend fun deleteLifestyle(id: String): Result<Unit> = runCatching {
+        authenticatedUnit { api.deleteLifestyle(id, auth()) }
+    }
+
+    suspend fun updateLifestyle(id: String, input: LifestyleEntryInput): Result<LifestyleEntryDto> = runCatching {
+        authenticated { api.updateLifestyle(id, input, auth()) }.body().requireData()
+    }
+
+    suspend fun medications(): Result<MedicationPageDto> = runCatching { authenticated { api.medications("active", auth()) }.body().requireData() }
+    suspend fun createMedication(input: MedicationInput): Result<MedicationDto> = runCatching { authenticated { api.createMedication(input, auth()) }.body().requireData() }
+    suspend fun updateMedication(id: String, input: MedicationInput): Result<MedicationDto> = runCatching { authenticated { api.updateMedication(id, input, auth()) }.body().requireData() }
+    suspend fun deleteMedication(id: String): Result<Unit> = runCatching { authenticatedUnit { api.deleteMedication(id, auth()) } }
+    suspend fun discontinueMedication(id: String): Result<MedicationDto> = runCatching { authenticated { api.discontinueMedication(id, auth()) }.body().requireData() }
+    suspend fun medicationDoses(id: String): Result<MedicationDosePageDto> = runCatching { authenticated { api.medicationDoses(id, auth()) }.body().requireData() }
+    suspend fun createMedicationDose(id: String, input: MedicationDoseInput): Result<MedicationDoseDto> = runCatching { authenticated { api.createMedicationDose(id, input, auth()) }.body().requireData() }
 
     suspend fun createGlucoseReading(input: GlucoseReadingInput): Result<GlucoseReadingDto> = runCatching {
         authenticated { api.createGlucoseReading(input, auth()) }.body().requireData()
@@ -74,15 +121,17 @@ class PatientRepository(private val api: GlycoTwinApi, private val tokens: Token
     private fun <T> Response<ApiResponse<T>>.toApiException(): ApiException {
         val body = errorBody()?.string()
         val error = runCatching { gson.fromJson(body, ErrorEnvelope::class.java)?.error }.getOrNull()
+        val requestId = runCatching { gson.fromJson(body, ErrorEnvelope::class.java)?.requestId }.getOrNull()
         return ApiException(
-            error?.message ?: "Request failed (${code()})",
+            error?.message ?: body?.takeIf { it.isNotBlank() } ?: "Request failed (${code()})",
             code(),
             error?.code,
+            requestId,
         )
     }
 
     private fun Response<Unit>.toUnitApiException(): ApiException = ApiException("Request failed (${code()})", code())
 
-    private data class ErrorEnvelope(val error: ErrorBody?)
+    private data class ErrorEnvelope(val error: ErrorBody?, val requestId: String?)
     private data class ErrorBody(val code: String?, val message: String?)
 }

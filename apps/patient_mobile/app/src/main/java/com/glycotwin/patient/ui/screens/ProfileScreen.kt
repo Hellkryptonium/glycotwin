@@ -3,14 +3,24 @@ package com.glycotwin.patient.ui.screens
 import android.app.DatePickerDialog
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -21,6 +31,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.text.font.FontWeight
 import com.glycotwin.patient.data.remote.PatientProfileUpdate
 import com.glycotwin.patient.data.remote.UserDto
 import com.glycotwin.patient.ui.components.BrandHeader
@@ -29,6 +40,7 @@ import com.glycotwin.patient.ui.components.TactileButton
 import com.glycotwin.patient.ui.components.TactileOutlinedButton
 import com.glycotwin.patient.ui.theme.MutedInk
 import com.glycotwin.patient.ui.theme.Pine
+import com.glycotwin.patient.ui.theme.Tomato
 import com.glycotwin.patient.ui.viewmodel.PatientViewModel
 import java.time.LocalDate
 
@@ -47,6 +59,11 @@ fun ProfileScreen(
     var diabetesType by rememberSaveable { mutableStateOf("") }
     var validationError by rememberSaveable { mutableStateOf<String?>(null) }
     var editing by rememberSaveable { mutableStateOf(required) }
+    var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(state.accountDeleted) {
+        if (state.accountDeleted) onLogout()
+    }
 
     LaunchedEffect(state.profile?.profile?.id) {
         state.profile?.profile?.let { profile ->
@@ -124,6 +141,54 @@ fun ProfileScreen(
                 }
             }
         }
-        if (!required) TactileOutlinedButton("Log out", onLogout, Modifier.fillMaxWidth())
+        if (!required) {
+            TactileOutlinedButton("Log out", onLogout, Modifier.fillMaxWidth())
+            OutlinedButton(
+                onClick = { showDeleteDialog = true },
+                enabled = !state.accountDeleting,
+                modifier = Modifier.fillMaxWidth(),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Tomato),
+                border = BorderStroke(2.dp, Tomato),
+                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
+            ) {
+                Icon(Icons.Default.Delete, contentDescription = null)
+                Text(
+                    if (state.accountDeleting) "Deleting account..." else "Delete account",
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            state.accountDeletionError?.let { Text(it, color = Tomato) }
+        }
+    }
+
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!state.accountDeleting) showDeleteDialog = false },
+            title = { Text("Delete your account?") },
+            text = {
+                Text(
+                    "Are you sure you want to permanently delete your GlycoTwin account? " +
+                        "This action cannot be undone. Your personal information, health records, " +
+                        "glucose readings, medications, and lifestyle entries associated with your account will also be deleted.",
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDeleteDialog = false
+                        viewModel.deleteAccount()
+                    },
+                    enabled = !state.accountDeleting,
+                    colors = ButtonDefaults.buttonColors(containerColor = Tomato),
+                ) { Text("Delete permanently") }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showDeleteDialog = false },
+                    enabled = !state.accountDeleting,
+                ) { Text("Cancel") }
+            },
+        )
     }
 }
