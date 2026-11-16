@@ -40,3 +40,29 @@ The API URL is a Gradle build property:
 ## Limitations
 
 The API currently has no patient-side relationship-list endpoint. The app therefore does not invent one; connected-doctor information is shown only when supported by returned accepted-invitation data. Gender and diabetes type remain validated text fields because the existing database has no enum values. Health metrics, device data, recommendations, and ML predictions are intentionally not implemented.
+
+
+
+## Project Screenshots
+
+### GlycoTwin Overview
+![GlycoTwin](../../docs/public/Glycotwin.png)
+
+### Patient Mobile Application
+![Patient App](../../docs/public/patient_app.png)
+
+### Dashboard
+![Dashboard](../../docs/public/Dashboard.png)
+
+### Health Tracking
+![Health Track](../../docs/public/health_track.png)
+
+### Health Trends
+![Health Trends](../../docs/public/health_trends.png)
+
+### Medicine Tracking
+![Medicine Track](../../docs/public/medicine_track.png)
+
+### Doctor Connection
+![Doctor Connection](../../docs/public/doctor_connection.png)
+
