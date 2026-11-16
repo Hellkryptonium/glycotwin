@@ -43,26 +43,45 @@ The API currently has no patient-side relationship-list endpoint. The app theref
 
 
 
+
+
 ## Project Screenshots
 
-### GlycoTwin Overview
-![GlycoTwin](../../docs/public/Glycotwin.png)
+<table>
+  <tr>
+    <td align="center">
+      <img src="../../docs/public/Glycotwin.png" width="180" alt="GlycoTwin Overview">
+      <br><strong>GlycoTwin Overview</strong>
+    </td>
+    <td align="center">
+      <img src="../../docs/public/patient_app.png" width="180" alt="Patient App">
+      <br><strong>Patient App</strong>
+    </td>
+    <td align="center">
+      <img src="../../docs/public/Dashboard.png" width="180" alt="Dashboard">
+      <br><strong>Dashboard</strong>
+    </td>
+    <td align="center">
+      <img src="../../docs/public/health_track.png" width="180" alt="Health Tracking">
+      <br><strong>Health Tracking</strong>
+    </td>
+  </tr>
 
-### Patient Mobile Application
-![Patient App](../../docs/public/patient_app.png)
+  <tr>
+    <td align="center">
+      <img src="../../docs/public/health_trends.png" width="180" alt="Health Trends">
+      <br><strong>Health Trends</strong>
+    </td>
+    <td align="center">
+      <img src="../../docs/public/medicine_track.png" width="180" alt="Medicine Tracking">
+      <br><strong>Medicine Tracking</strong>
+    </td>
+    <td align="center">
+      <img src="../../docs/public/doctor_connection.png" width="180" alt="Doctor Connection">
+      <br><strong>Doctor Connection</strong>
+    </td>
+  </tr>
+</table>
 
-### Dashboard
-![Dashboard](../../docs/public/Dashboard.png)
 
-### Health Tracking
-![Health Track](../../docs/public/health_track.png)
-
-### Health Trends
-![Health Trends](../../docs/public/health_trends.png)
-
-### Medicine Tracking
-![Medicine Track](../../docs/public/medicine_track.png)
-
-### Doctor Connection
-![Doctor Connection](../../docs/public/doctor_connection.png)
 
