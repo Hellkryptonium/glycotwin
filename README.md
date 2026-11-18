@@ -103,42 +103,33 @@ See [apps/ml-service/README.md](apps/ml-service/README.md). Its dataset and mode
 
 The API prefix is `/api/v1`. Authentication, connection routes, validation schemas, and response contracts are maintained in `apps/api/src/modules`. See [docs/api/api-overview.md](docs/api/api-overview.md) and [apps/api/README.md](apps/api/README.md).
 
+
 ## Project Screenshots
 
-<table>
-  <tr>
-    <td align="center">
-      <img src="../../docs/public/Glycotwin.png" width="180" alt="GlycoTwin Overview">
-      <br><strong>GlycoTwin Overview</strong>
-    </td>
-    <td align="center">
-      <img src="../../docs/public/patient_app.png" width="180" alt="Patient App">
-      <br><strong>Patient App</strong>
-    </td>
-    <td align="center">
-      <img src="../../docs/public/Dashboard.png" width="180" alt="Dashboard">
-      <br><strong>Dashboard</strong>
-    </td>
-    <td align="center">
-      <img src="../../docs/public/health_track.png" width="180" alt="Health Tracking">
-      <br><strong>Health Tracking</strong>
-    </td>
-  </tr>
+### Web Dashboard
 
-  <tr>
-    <td align="center">
-      <img src="../../docs/public/health_trends.png" width="180" alt="Health Trends">
-      <br><strong>Health Trends</strong>
-    </td>
-    <td align="center">
-      <img src="../../docs/public/medicine_track.png" width="180" alt="Medicine Tracking">
-      <br><strong>Medicine Tracking</strong>
-    </td>
-    <td align="center">
-      <img src="../../docs/public/doctor_connection.png" width="180" alt="Doctor Connection">
-      <br><strong>Doctor Connection</strong>
-    </td>
-  </tr>
+<p align="center">
+  <img src="docs/public/Dashboard.png" width="85%" alt="GlycoTwin Doctor Dashboard"/>
+</p>
+
+### Patient Mobile Application
+
+<p align="center">
+  <img src="docs/public/patient_app.png" width="32%" alt="Patient App"/>
+  <img src="docs/public/health_track.png" width="32%" alt="Health Tracking"/>
+  <img src="docs/public/health_trends.png" width="32%" alt="Health Trends"/>
+</p>
+
+<p align="center">
+  <img src="docs/public/medicine_track.png" width="32%" alt="Medicine Tracking"/>
+  <img src="docs/public/doctor_connection.png" width="32%" alt="Doctor Connection"/>
+</p>
+
+### Project Overview
+
+<p align="center">
+  <img src="docs/public/Glycotwin.png" width="80%" alt="GlycoTwin Overview"/>
+</p>
 
 ## Security and medical disclaimer
 
