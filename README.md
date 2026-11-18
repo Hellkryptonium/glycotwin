@@ -103,6 +103,49 @@ See [apps/ml-service/README.md](apps/ml-service/README.md). Its dataset and mode
 
 The API prefix is `/api/v1`. Authentication, connection routes, validation schemas, and response contracts are maintained in `apps/api/src/modules`. See [docs/api/api-overview.md](docs/api/api-overview.md) and [apps/api/README.md](apps/api/README.md).
 
+<!--write code for popup boxes for confirm ,alert, prompt-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <!--confirm()-->
+    <script>
+        function myFunction(){
+            let text;
+            if(confirm("Press a button!")){
+                text = "You pressed OK!";
+            }else{
+                text = "You pressed Cancel!";
+            }
+            document.getElementById("demo").innerHTML = text;
+        }
+    </script>
+    <!--alert()-->
+    <script>
+        function myFunction(){
+            alert("Hello World!");
+        }   
+    </script>
+    <!--prompt()-->
+    <script>    
+        function myFunction(){
+            let person = prompt("Please enter your name", "Harry Potter");
+            if(person != null){
+                document.getElementById("demo").innerHTML = "Hello " + person + "! How are you today?";
+            }
+        }
+    </script>
+    <h2>javaScript confirmed</h2>
+    <button onclick="myFunction()">Click Me</button>
+    <p id="demo">are you dealing with me?</p>
+    
+</body>
+</html>
+
 ## Security and medical disclaimer
 
 Authentication uses short-lived signed access tokens and rotating opaque refresh tokens. Passwords are hashed; raw refresh tokens are not stored by the API, and the Android app protects session tokens with Android Keystore. Doctor-patient data access is created only after patient consent to an invitation.
