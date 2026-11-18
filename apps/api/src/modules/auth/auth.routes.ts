@@ -32,6 +32,7 @@ export function createAuthRouter(service: AuthControllerService, requireAuth: Re
   router.post('/login', controller.login);
   router.post('/refresh', controller.refresh);
   router.post('/logout', requireAuth, controller.logout);
+  router.delete('/account', requireAuth, controller.deleteAccount);
   router.get('/me', requireAuth, controller.me);
   return router;
 }

@@ -75,6 +75,7 @@ export interface AuthRepository {
   revokeRefreshToken(id: string, revokedAt: Date): Promise<void>;
   revokeUserRefreshTokens(userId: string, revokedAt: Date): Promise<void>;
   rotateRefreshToken(oldId: string, newToken: NewRefreshToken, revokedAt: Date): Promise<boolean>;
+  deleteAccount(userId: string): Promise<void>;
 }
 
 export interface PasswordHasher {
@@ -118,6 +119,7 @@ export interface AuthService {
   login(email: string, password: string): Promise<AuthTokens>;
   refresh(rawToken: string): Promise<AuthTokens>;
   logout(rawToken: string, userId: string): Promise<void>;
+  deleteAccount(userId: string): Promise<void>;
   getCurrentUser(userId: string): Promise<AuthenticatedUser>;
   verifyAccessToken(token: string): Promise<AccessTokenClaims>;
 }

@@ -18,6 +18,7 @@ data class UserDto(
     val isActive: Boolean,
     val patientProfile: PatientProfileDto?,
 )
+data class LifestylePageDto(val items: List<LifestyleEntryDto>, val page: Int, val limit: Int)
 data class PatientProfileDto(val id: String, val fullName: String?, val dateOfBirth: String?, val gender: String?, val diabetesType: String?)
 data class InvitationDto(
     val id: String,
@@ -49,6 +50,9 @@ interface GlycoTwinApi {
 
     @POST("auth/logout")
     suspend fun logout(@Body body: RefreshRequest): Response<Unit>
+
+    @retrofit2.http.DELETE("auth/account")
+    suspend fun deleteAccount(@retrofit2.http.Header("Authorization") authorization: String): Response<Unit>
 
     @GET("auth/me")
     suspend fun me(@retrofit2.http.Header("Authorization") authorization: String): Response<ApiResponse<UserDto>>
@@ -85,6 +89,54 @@ interface GlycoTwinApi {
         @retrofit2.http.Header("Authorization") authorization: String,
     ): Response<ApiResponse<GlucosePageDto>>
 
+    @retrofit2.http.GET("patient/analytics/glucose")
+    suspend fun glucoseAnalytics(
+        @retrofit2.http.Query("range") range: String,
+        @retrofit2.http.Header("Authorization") authorization: String,
+    ): Response<ApiResponse<GlucoseAnalyticsDto>>
+
+    @retrofit2.http.POST("patient/lifestyle/{type}")
+    suspend fun createLifestyle(
+        @retrofit2.http.Path("type") type: String,
+        @retrofit2.http.Body body: LifestyleEntryInput,
+        @retrofit2.http.Header("Authorization") authorization: String,
+    ): Response<ApiResponse<LifestyleEntryDto>>
+
+    @retrofit2.http.GET("patient/lifestyle/timeline")
+    suspend fun lifestyleTimeline(
+        @retrofit2.http.Query("page") page: Int,
+        @retrofit2.http.Query("limit") limit: Int,
+        @retrofit2.http.Header("Authorization") authorization: String,
+    ): Response<ApiResponse<LifestylePageDto>>
+
+    @retrofit2.http.DELETE("patient/lifestyle/{id}")
+    suspend fun deleteLifestyle(
+        @retrofit2.http.Path("id") id: String,
+        @retrofit2.http.Header("Authorization") authorization: String,
+    ): Response<Unit>
+
+    @retrofit2.http.POST("patient/medications")
+    suspend fun createMedication(@retrofit2.http.Body body: MedicationInput, @retrofit2.http.Header("Authorization") authorization: String): Response<ApiResponse<MedicationDto>>
+    @retrofit2.http.GET("patient/medications")
+    suspend fun medications(@retrofit2.http.Query("status") status: String, @retrofit2.http.Header("Authorization") authorization: String): Response<ApiResponse<MedicationPageDto>>
+    @retrofit2.http.PATCH("patient/medications/{id}")
+    suspend fun updateMedication(@retrofit2.http.Path("id") id: String, @retrofit2.http.Body body: MedicationInput, @retrofit2.http.Header("Authorization") authorization: String): Response<ApiResponse<MedicationDto>>
+    @retrofit2.http.DELETE("patient/medications/{id}")
+    suspend fun deleteMedication(@retrofit2.http.Path("id") id: String, @retrofit2.http.Header("Authorization") authorization: String): Response<Unit>
+    @retrofit2.http.POST("patient/medications/{id}/discontinue")
+    suspend fun discontinueMedication(@retrofit2.http.Path("id") id: String, @retrofit2.http.Header("Authorization") authorization: String): Response<ApiResponse<MedicationDto>>
+    @retrofit2.http.GET("patient/medications/{id}/doses")
+    suspend fun medicationDoses(@retrofit2.http.Path("id") id: String, @retrofit2.http.Header("Authorization") authorization: String): Response<ApiResponse<MedicationDosePageDto>>
+    @retrofit2.http.POST("patient/medications/{id}/doses")
+    suspend fun createMedicationDose(@retrofit2.http.Path("id") id: String, @retrofit2.http.Body body: MedicationDoseInput, @retrofit2.http.Header("Authorization") authorization: String): Response<ApiResponse<MedicationDoseDto>>
+
+    @retrofit2.http.PATCH("patient/lifestyle/{id}")
+    suspend fun updateLifestyle(
+        @retrofit2.http.Path("id") id: String,
+        @retrofit2.http.Body body: LifestyleEntryInput,
+        @retrofit2.http.Header("Authorization") authorization: String,
+    ): Response<ApiResponse<LifestyleEntryDto>>
+
     @retrofit2.http.PUT("patient/glucose-readings/{id}")
     suspend fun updateGlucoseReading(
         @retrofit2.http.Path("id") id: String,
@@ -113,6 +165,77 @@ data class GlucoseReadingDto(
     val updatedAt: String,
 )
 data class GlucosePageDto(val items: List<GlucoseReadingDto>, val page: Int, val limit: Int)
+data class GlucoseAnalyticsDto(
+    val range: String,
+    val from: String,
+    val to: String,
+    val unit: String?,
+    val latest: GlucoseAnalyticsReadingDto?,
+    val totalReadings: Int,
+    val average: String?,
+    val minimum: String?,
+    val maximum: String?,
+    val daily: List<DailyGlucoseDto>,
+    val readings: List<GlucoseAnalyticsReadingDto>,
+    val byUnit: List<GlucoseUnitSummaryDto>,
+)
+data class GlucoseAnalyticsReadingDto(val value: String, val measuredAt: String, val unit: String)
+data class DailyGlucoseDto(val date: String, val average: String, val readingCount: Int, val unit: String)
+data class GlucoseUnitSummaryDto(val unit: String, val totalReadings: Int, val average: String, val minimum: String, val maximum: String)
+data class LifestyleEntryDto(
+    val id: String,
+    val patientId: String,
+    val type: String,
+    val occurredAt: String,
+    val mealType: String?,
+    val description: String?,
+    val activityType: String?,
+    val durationMinutes: Int?,
+    val sleepDurationMinutes: Int?,
+    val notes: String?,
+)
+data class LifestyleEntryInput(
+    val type: String,
+    val occurredAt: String,
+    val mealType: String? = null,
+    val description: String? = null,
+    val activityType: String? = null,
+    val durationMinutes: Int? = null,
+    val sleepDurationMinutes: Int? = null,
+    val notes: String? = null,
+)
+data class MedicationDto(
+    val id: String,
+    val patientId: String,
+    val name: String,
+    val dosage: String,
+    val frequency: String,
+    val scheduleTimes: List<String>,
+    val startDate: String,
+    val endDate: String?,
+    val instructions: String?,
+    val status: String,
+)
+data class MedicationPageDto(val items: List<MedicationDto>, val page: Int, val limit: Int)
+data class MedicationInput(
+    val name: String,
+    val dosage: String,
+    val frequency: String,
+    val scheduleTimes: List<String>,
+    val startDate: String,
+    val endDate: String? = null,
+    val instructions: String? = null,
+)
+data class MedicationDoseDto(
+    val id: String,
+    val medicationId: String,
+    val patientId: String,
+    val scheduledAt: String,
+    val takenAt: String?,
+    val status: String,
+)
+data class MedicationDosePageDto(val items: List<MedicationDoseDto>, val page: Int, val limit: Int)
+data class MedicationDoseInput(val scheduledAt: String, val takenAt: String?, val status: String)
 data class GlucoseReadingInput(
     val value: String,
     val unit: String,
