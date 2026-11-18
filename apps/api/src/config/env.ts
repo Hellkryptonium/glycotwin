@@ -4,7 +4,7 @@ import { z } from 'zod';
 const environmentSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   DEMO_MODE: z.enum(['true', 'false']).default('false').transform((value) => value === 'true'),
-  PORT: z.coerce.number().int().min(1).max(65535).default(5000),
+  PORT: z.coerce.number().int().min(1).max(65535).default(5050),
   HOST: z.string().min(1).default('0.0.0.0'),
   DATABASE_URL: z.string().url().refine(
     (value) => value.startsWith('postgres://') || value.startsWith('postgresql://'),

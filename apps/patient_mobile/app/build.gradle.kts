@@ -16,7 +16,7 @@ android {
         versionCode = 1
         versionName = "1.0"
         val apiBaseUrl = (project.findProperty("API_BASE_URL") as String?)
-            ?: "http://192.168.1.107:5000/api/v1/"
+            ?: "http://10.0.2.2:5050/api/v1/"
         buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
         manifestPlaceholders["allowCleartext"] = false
 
@@ -55,6 +55,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation("androidx.compose.material:material-icons-extended")
     implementation(libs.retrofit)
     implementation(libs.retrofit.gson)
     implementation(libs.gson)
