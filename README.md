@@ -109,6 +109,29 @@ See [apps/ml-service/README.md](apps/ml-service/README.md). Its dataset and mode
 
 The API prefix is `/api/v1`. Authentication, connection routes, validation schemas, and response contracts are maintained in `apps/api/src/modules`. See [docs/api/api-overview.md](docs/api/api-overview.md) and [apps/api/README.md](apps/api/README.md).
 
+
+## Project Screenshots
+
+### Doctor Dashboard
+
+<p align="center">
+  <img src="docs/public/doctor_dashboard.png" width="85%" alt="GlycoTwin Doctor Dashboard"/>
+</p>
+
+### Patient Mobile Application
+
+<p align="center">
+  <img src="docs/public/patient_app.png" width="32%" alt="Patient App"/>
+  <img src="docs/public/health_track.png" width="32%" alt="Health Tracking"/>
+  <img src="docs/public/health_trends.png" width="32%" alt="Health Trends"/>
+</p>
+
+<p align="center">
+  <img src="docs/public/medicine_track.png" width="32%" alt="Medicine Tracking"/>
+  <img src="docs/public/doctor_connection.png" width="32%" alt="Doctor Connection"/>
+</p>
+
+
 ## Security and medical disclaimer
 
 Authentication uses short-lived signed access tokens and rotating opaque refresh tokens. Passwords are hashed; raw refresh tokens are not stored by the API, and the Android app protects session tokens with Android Keystore. Doctor-patient data access is created only after patient consent to an invitation.

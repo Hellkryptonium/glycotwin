@@ -92,8 +92,48 @@ The API URL is a Gradle build property:
 ## Limitations
 
 The API currently has no patient-side relationship-list endpoint. The app therefore does not invent one; connected-doctor information is shown only when supported by returned accepted-invitation data. Gender and diabetes type remain validated text fields because the existing database has no enum values. Health metrics, device data, recommendations, and ML predictions are intentionally not implemented.
-The patient app includes a Trends tab with authenticated 7-day, 30-day, and 90-day descriptive glucose analytics, daily summaries, and loading/empty/error states. Values are calculated from recorded readings and are not medical recommendations.
 
-Debug builds also expose a `Preview sample data` action on the Trends tab for checking the complete UI without database records. It is not included in release builds and never changes production analytics.
-The Lifestyle tab records patient-entered meals, activity, sleep, and symptoms through the authenticated API and supports listing and deletion.
-The Medication tab lets patients add and edit active medications, discontinue them, record taken or skipped doses, and review recorded dose history. It does not generate reminders, recommendations, or medication data.
+
+
+
+
+## Project Screenshots
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="../../docs/public/Glycotwin.png" width="180" alt="GlycoTwin Overview">
+      <br><strong>GlycoTwin Overview</strong>
+    </td>
+    <td align="center">
+      <img src="../../docs/public/patient_app.png" width="180" alt="Patient App">
+      <br><strong>Patient App</strong>
+    </td>
+    <td align="center">
+      <img src="../../docs/public/Dashboard.png" width="180" alt="Dashboard">
+      <br><strong>Dashboard</strong>
+    </td>
+    <td align="center">
+      <img src="../../docs/public/health_track.png" width="180" alt="Health Tracking">
+      <br><strong>Health Tracking</strong>
+    </td>
+  </tr>
+
+  <tr>
+    <td align="center">
+      <img src="../../docs/public/health_trends.png" width="180" alt="Health Trends">
+      <br><strong>Health Trends</strong>
+    </td>
+    <td align="center">
+      <img src="../../docs/public/medicine_track.png" width="180" alt="Medicine Tracking">
+      <br><strong>Medicine Tracking</strong>
+    </td>
+    <td align="center">
+      <img src="../../docs/public/doctor_connection.png" width="180" alt="Doctor Connection">
+      <br><strong>Doctor Connection</strong>
+    </td>
+  </tr>
+</table>
+
+
+
