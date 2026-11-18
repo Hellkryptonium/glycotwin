@@ -106,10 +106,10 @@ The API prefix is `/api/v1`. Authentication, connection routes, validation schem
 
 ## Project Screenshots
 
-### Web Dashboard
+### Doctor Dashboard
 
 <p align="center">
-  <img src="docs/public/Dashboard.png" width="85%" alt="GlycoTwin Doctor Dashboard"/>
+  <img src="docs/public/doctor_dashboard.png" width="85%" alt="GlycoTwin Doctor Dashboard"/>
 </p>
 
 ### Patient Mobile Application
@@ -125,11 +125,6 @@ The API prefix is `/api/v1`. Authentication, connection routes, validation schem
   <img src="docs/public/doctor_connection.png" width="32%" alt="Doctor Connection"/>
 </p>
 
-### Project Overview
-
-<p align="center">
-  <img src="docs/public/Glycotwin.png" width="80%" alt="GlycoTwin Overview"/>
-</p>
 
 ## Security and medical disclaimer
 
