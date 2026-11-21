@@ -25,8 +25,8 @@ android {
     buildTypes {
         release {
             optimization {
-                enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
+                // Scoped optimization in beta 1 caused an IllegalAccessError during watch startup.
+                enable = false
             }
         }
     }
