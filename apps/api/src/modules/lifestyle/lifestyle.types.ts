@@ -6,6 +6,7 @@ export interface LifestyleEntry {
   type: LifestyleType;
   occurredAt: Date;
   mealType: MealType | null;
+  carbohydrateGrams: number | null;
   description: string | null;
   activityType: string | null;
   durationMinutes: number | null;

@@ -5,9 +5,8 @@ import type { Environment } from '../../config/env.js';
 import { createRequireAuth } from '../../middleware/auth.middleware.js';
 import { createAuthController, type AuthControllerService } from './auth.controller.js';
 import { createAuthRepository } from './auth.repository.js';
-import { createAuthService } from './auth.service.js';
+import { createAuthService, createPasswordHasher } from './auth.service.js';
 import type { AuthService } from './auth.types.js';
-import { createBcryptPasswordHasher } from './auth.service.js';
 import { createUsersService } from '../users/users.service.js';
 import { createUsersRepository } from '../users/users.repository.js';
 
@@ -16,9 +15,9 @@ export interface AuthModule {
   service: AuthService;
 }
 
-export function createAuthRouter(service: AuthControllerService, requireAuth: ReturnType<typeof createRequireAuth>): Router {
+export function createAuthRouter(service: AuthControllerService, requireAuth: ReturnType<typeof createRequireAuth>, environment?: Environment): Router {
   const router = Router();
-  const controller = createAuthController(service);
+  const controller = createAuthController(service, environment);
   const authenticationLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     limit: 20,
@@ -26,13 +25,18 @@ export function createAuthRouter(service: AuthControllerService, requireAuth: Re
     legacyHeaders: false,
   });
 
-  router.use(authenticationLimiter);
-  router.post('/register/doctor', controller.registerDoctor);
-  router.post('/register/patient', controller.registerPatient);
-  router.post('/login', controller.login);
+  router.use((_request, response, next) => {
+    response.set('Cache-Control', 'no-store');
+    next();
+  });
+
+  router.post('/register/doctor', authenticationLimiter, controller.registerDoctor);
+  router.post('/register/patient', authenticationLimiter, controller.registerPatient);
+  router.post('/login', authenticationLimiter, controller.login);
   router.post('/refresh', controller.refresh);
-  router.post('/logout', requireAuth, controller.logout);
-  router.delete('/account', requireAuth, controller.deleteAccount);
+  router.post('/logout', controller.logout);
+  router.delete('/account', authenticationLimiter, requireAuth, controller.deleteAccount);
+  router.put('/account/password', authenticationLimiter, requireAuth, controller.changePassword);
   router.get('/me', requireAuth, controller.me);
   return router;
 }
@@ -44,10 +48,10 @@ export function createAuthModule(database: Database, environment: Environment): 
     userService: createUsersService(database, { demoMode: environment.DEMO_MODE }),
     userRepository,
     authRepository: createAuthRepository(database),
-    passwordHasher: createBcryptPasswordHasher(environment.BCRYPT_ROUNDS),
+    passwordHasher: createPasswordHasher(),
   });
   return {
     service,
-    router: createAuthRouter(service, createRequireAuth(service)),
+    router: createAuthRouter(service, createRequireAuth(service), environment),
   };
 }

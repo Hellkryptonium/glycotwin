@@ -11,6 +11,7 @@ export const updatePatientProfileSchema = z.object({
   dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date of birth must use YYYY-MM-DD').nullable().optional(),
   gender: optionalText(100),
   diabetesType: optionalText(100),
+  treatmentContext: z.enum(['INSULIN', 'NON_INSULIN', 'LIFESTYLE', 'UNKNOWN']).nullable().optional(),
 }).strict().superRefine((value, context) => {
   if (!value.dateOfBirth) return;
   const parsed = new Date(`${value.dateOfBirth}T00:00:00.000Z`);

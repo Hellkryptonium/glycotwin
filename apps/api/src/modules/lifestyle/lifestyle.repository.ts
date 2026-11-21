@@ -36,7 +36,11 @@ export function createLifestyleRepository(database: Database) {
       return rows[0] ?? null;
     },
     async create(patientId: string, input: LifestyleInput) {
-      const rows = await database.insert(lifestyleEntries).values({ patientId, ...values(input) }).returning();
+      const rows = await database.insert(lifestyleEntries).values({
+        patientId,
+        ...values(input),
+        carbohydrateGrams: input.type === 'meal' ? input.carbohydrateGrams ?? null : null,
+      }).returning();
       return rows[0]!;
     },
     async list(patientId: string, input: LifestyleListInput) {
@@ -49,7 +53,11 @@ export function createLifestyleRepository(database: Database) {
       return rows[0] ?? null;
     },
     async update(id: string, patientId: string, input: LifestyleInput) {
-      const rows = await database.update(lifestyleEntries).set({ ...values(input), updatedAt: new Date() })
+      // An omitted field preserves existing estimates when an older client edits a meal.
+      const carbohydrateGrams = input.type === 'meal' && input.clearCarbohydrateGrams !== true
+        ? input.carbohydrateGrams
+        : null;
+      const rows = await database.update(lifestyleEntries).set({ ...values(input), carbohydrateGrams, updatedAt: new Date() })
         .where(and(eq(lifestyleEntries.id, id), eq(lifestyleEntries.patientId, patientId))).returning();
       return rows[0] ?? null;
     },

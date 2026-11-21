@@ -1,4 +1,4 @@
-import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, randomUUID, scrypt, timingSafeEqual } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { jwtVerify, SignJWT, type JWTPayload } from 'jose';
 import { AppError } from '../../common/errors/app-error.js';
@@ -7,20 +7,22 @@ import { doctorRegistrationSchema, patientRegistrationSchema } from './auth.sche
 import type {
   AccessTokenClaims,
   AuthDependencies,
+  AuthRegistration,
   AuthenticatedUser,
   AuthService,
   AuthTokens,
-  DoctorRegistrationInput,
   NewRefreshToken,
-  PatientRegistrationInput,
+  PasswordHasher,
   SafeUser,
   UserRole,
 } from './auth.types.js';
 
 const ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
-const REFRESH_TOKEN_TTL_MS = 30 * 24 * 60 * 60 * 1000;
+const SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const TOKEN_ROTATION_GRACE_MS = 10_000;
 const genericAuthenticationError = () => new AppError(401, 'INVALID_CREDENTIALS', 'Invalid email or password.');
 const invalidRefreshError = () => new AppError(401, 'INVALID_REFRESH_TOKEN', 'Refresh token is invalid or expired.');
+const rotatedRefreshError = () => new AppError(409, 'REFRESH_ALREADY_ROTATED', 'The session was just refreshed. Try again.');
 
 function secret(value: string): Uint8Array {
   return new TextEncoder().encode(value);
@@ -50,6 +52,7 @@ function toAccessClaims(payload: JWTPayload): AccessTokenClaims {
     || typeof payload.iat !== 'number'
     || typeof payload.exp !== 'number'
     || typeof payload.jti !== 'string'
+    || typeof payload.sid !== 'string'
   ) {
     throw new AppError(401, 'INVALID_ACCESS_TOKEN', 'Access token is invalid or expired.');
   }
@@ -60,10 +63,11 @@ function toAccessClaims(payload: JWTPayload): AccessTokenClaims {
     iat: payload.iat,
     exp: payload.exp,
     jti: payload.jti,
+    sid: payload.sid,
   };
 }
 
-function createRefreshToken(userId: string): { raw: string; record: NewRefreshToken } {
+function createRefreshToken(userId: string, sessionId: string, expiresAt: Date): { raw: string; record: NewRefreshToken } {
   const id = randomUUID();
   const raw = `${id}.${randomBytes(48).toString('base64url')}`;
   return {
@@ -71,46 +75,73 @@ function createRefreshToken(userId: string): { raw: string; record: NewRefreshTo
     record: {
       id,
       userId,
+      sessionId,
       tokenHash: hashRefreshToken(raw),
-      expiresAt: new Date(Date.now() + REFRESH_TOKEN_TTL_MS),
+      expiresAt,
     },
   };
 }
 
-async function signAccessToken(user: SafeUser, environment: Environment): Promise<string> {
-  return new SignJWT({ role: user.role })
+async function signAccessToken(user: SafeUser, sessionId: string, expiresIn: number, environment: Environment): Promise<string> {
+  return new SignJWT({ role: user.role, sid: sessionId })
     .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
     .setSubject(user.id)
     .setIssuer(environment.JWT_ISSUER)
     .setAudience(environment.JWT_AUDIENCE)
     .setIssuedAt()
-    .setExpirationTime(`${ACCESS_TOKEN_TTL_SECONDS}s`)
+    .setExpirationTime(`${expiresIn}s`)
     .setJti(randomUUID())
     .sign(secret(environment.JWT_ACCESS_SECRET));
 }
 
-async function issueTokens(user: SafeUser, dependencies: AuthDependencies): Promise<AuthTokens> {
-  const refresh = createRefreshToken(user.id);
-  await dependencies.authRepository.insertRefreshToken(refresh.record);
+async function toTokens(user: SafeUser, refresh: ReturnType<typeof createRefreshToken>, environment: Environment): Promise<AuthTokens> {
+  const expiresIn = Math.min(ACCESS_TOKEN_TTL_SECONDS, Math.ceil((refresh.record.expiresAt.getTime() - Date.now()) / 1000));
+  if (expiresIn <= 0) throw invalidRefreshError();
   return {
-    accessToken: await signAccessToken(user, dependencies.environment),
+    accessToken: await signAccessToken(user, refresh.record.sessionId, expiresIn, environment),
     refreshToken: refresh.raw,
-    expiresIn: ACCESS_TOKEN_TTL_SECONDS,
+    expiresIn,
+    sessionExpiresAt: refresh.record.expiresAt,
   };
 }
 
 export function createAuthService(dependencies: AuthDependencies): AuthService {
+  const { authRepository, passwordHasher, userRepository, environment } = dependencies;
+
+  async function issueTokens(user: SafeUser, expectedPasswordHash: string) {
+    const refresh = createRefreshToken(user.id, randomUUID(), new Date(Date.now() + SESSION_TTL_MS));
+    if (!await authRepository.insertRefreshToken(refresh.record, expectedPasswordHash)) throw genericAuthenticationError();
+    return toTokens(user, refresh, environment);
+  }
+
+  async function register(role: 'doctor' | 'patient', input: unknown): Promise<AuthRegistration> {
+    const schema = role === 'doctor' ? doctorRegistrationSchema : patientRegistrationSchema;
+    const { email, password } = schema.parse(input);
+    const passwordHash = await passwordHasher.hash(password);
+    return dependencies.userService.register(role, email, passwordHash, async (transaction, user) => {
+      const refresh = createRefreshToken(user.id, randomUUID(), new Date(Date.now() + SESSION_TTL_MS));
+      const tokens = await toTokens(user, refresh, environment);
+      await authRepository.insertInitialSession(transaction, refresh.record);
+      return { ...user, ...tokens };
+    });
+  }
+
+  async function reauthenticate(userId: string, password: string) {
+    const user = await userRepository.findById(userId);
+    if (!user?.isActive) throw new AppError(401, 'UNAUTHORIZED', 'Authentication is required.');
+    if (!await passwordHasher.compare(password, user.passwordHash)) {
+      throw new AppError(403, 'INCORRECT_CURRENT_PASSWORD', 'The current password is incorrect.');
+    }
+    return user;
+  }
+
   return {
-    async registerDoctor(input: unknown) {
-      const parsed = doctorRegistrationSchema.parse(input);
-      const passwordHash = await dependencies.passwordHasher.hash(parsed.password);
-      return dependencies.userService.registerDoctor(parsed, passwordHash);
+    registerDoctor(input: unknown) {
+      return register('doctor', input);
     },
 
-    async registerPatient(input: unknown) {
-      const parsed = patientRegistrationSchema.parse(input);
-      const passwordHash = await dependencies.passwordHasher.hash(parsed.password);
-      return dependencies.userService.registerPatient(parsed, passwordHash);
+    registerPatient(input: unknown) {
+      return register('patient', input);
     },
 
     async login(email: string, password: string): Promise<AuthTokens> {
@@ -118,7 +149,7 @@ export function createAuthService(dependencies: AuthDependencies): AuthService {
       if (!user || !user.isActive || !(await dependencies.passwordHasher.compare(password, user.passwordHash))) {
         throw genericAuthenticationError();
       }
-      return issueTokens(user, dependencies);
+      return issueTokens(user, user.passwordHash);
     },
 
     async refresh(rawToken: string): Promise<AuthTokens> {
@@ -127,15 +158,16 @@ export function createAuthService(dependencies: AuthDependencies): AuthService {
         throw invalidRefreshError();
       }
       const stored = await dependencies.authRepository.findRefreshTokenById(tokenId);
-      if (!stored || !matchesHash(rawToken, stored.tokenHash)) {
+      if (!stored?.sessionId || !matchesHash(rawToken, stored.tokenHash)) {
+        throw invalidRefreshError();
+      }
+      const now = new Date();
+      if (stored.expiresAt <= now || !await authRepository.isSessionActive(stored.sessionId, stored.userId, now)) {
         throw invalidRefreshError();
       }
       if (stored.revokedAt) {
-        await dependencies.authRepository.revokeUserRefreshTokens(stored.userId, new Date());
-        throw invalidRefreshError();
-      }
-      if (stored.expiresAt.getTime() <= Date.now()) {
-        await dependencies.authRepository.revokeRefreshToken(stored.id, new Date());
+        if (now.getTime() - stored.revokedAt.getTime() < TOKEN_ROTATION_GRACE_MS) throw rotatedRefreshError();
+        await authRepository.revokeSession(stored.sessionId, now);
         throw invalidRefreshError();
       }
 
@@ -144,36 +176,35 @@ export function createAuthService(dependencies: AuthDependencies): AuthService {
         throw invalidRefreshError();
       }
 
-      const refresh = createRefreshToken(user.id);
-      const rotated = await dependencies.authRepository.rotateRefreshToken(stored.id, refresh.record, new Date());
-      if (!rotated) {
-        await dependencies.authRepository.revokeUserRefreshTokens(stored.userId, new Date());
-        throw invalidRefreshError();
+      const refresh = createRefreshToken(user.id, stored.sessionId, stored.expiresAt);
+      if (!await authRepository.rotateRefreshToken(stored.id, refresh.record, now)) {
+        if (!await authRepository.isSessionActive(stored.sessionId, user.id, new Date())) throw invalidRefreshError();
+        throw rotatedRefreshError();
       }
-      return {
-        accessToken: await signAccessToken(user, dependencies.environment),
-        refreshToken: refresh.raw,
-        expiresIn: ACCESS_TOKEN_TTL_SECONDS,
-      };
+      return toTokens(user, refresh, environment);
     },
 
-    async logout(rawToken: string, userId: string): Promise<void> {
-      const tokenId = parseRefreshToken(rawToken);
+    async logout(rawToken) {
+      const tokenId = rawToken && parseRefreshToken(rawToken);
       if (!tokenId) {
         return;
       }
-      const stored = await dependencies.authRepository.findRefreshTokenById(tokenId);
-      if (stored && stored.userId === userId && matchesHash(rawToken, stored.tokenHash)) {
-        await dependencies.authRepository.revokeRefreshToken(stored.id, new Date());
+      const stored = await authRepository.findRefreshTokenById(tokenId);
+      if (rawToken && stored?.sessionId && matchesHash(rawToken, stored.tokenHash)) {
+        await authRepository.revokeSession(stored.sessionId, new Date());
       }
     },
 
-    async deleteAccount(userId: string): Promise<void> {
-      const user = await dependencies.userRepository.findById(userId);
-      if (!user || !user.isActive) {
-        throw new AppError(401, 'UNAUTHORIZED', 'Authentication is required.');
+    async deleteAccount(userId, currentPassword) {
+      const user = await reauthenticate(userId, currentPassword);
+      await authRepository.deleteAccount(user.id, user.passwordHash);
+    },
+
+    async changePassword(userId, input) {
+      const user = await reauthenticate(userId, input.currentPassword);
+      if (!await authRepository.updatePassword(user.id, user.passwordHash, await passwordHasher.hash(input.newPassword))) {
+        throw new AppError(403, 'INCORRECT_CURRENT_PASSWORD', 'The current password is incorrect.');
       }
-      await dependencies.authRepository.deleteAccount(userId);
     },
 
     async getCurrentUser(userId: string): Promise<AuthenticatedUser> {
@@ -185,23 +216,48 @@ export function createAuthService(dependencies: AuthDependencies): AuthService {
     },
 
     async verifyAccessToken(token: string): Promise<AccessTokenClaims> {
+      let claims: AccessTokenClaims;
       try {
         const result = await jwtVerify(token, secret(dependencies.environment.JWT_ACCESS_SECRET), {
           issuer: dependencies.environment.JWT_ISSUER,
           audience: dependencies.environment.JWT_AUDIENCE,
           algorithms: ['HS256'],
         });
-        return toAccessClaims(result.payload);
+        claims = toAccessClaims(result.payload);
       } catch {
         throw new AppError(401, 'INVALID_ACCESS_TOKEN', 'Access token is invalid or expired.');
       }
+      if (!claims.sid || !await authRepository.isSessionActive(claims.sid, claims.sub, new Date())) {
+        throw new AppError(401, 'INVALID_ACCESS_TOKEN', 'The session has ended. Sign in again.');
+      }
+      return claims;
     },
   };
 }
 
-export function createBcryptPasswordHasher(rounds: number) {
+function derivePassword(password: string, salt: Buffer) {
+  return new Promise<Buffer>((resolve, reject) => {
+    scrypt(password, salt, 64, { N: 32768, r: 8, p: 3, maxmem: 64 * 1024 * 1024 }, (error, key) => {
+      if (error) reject(error);
+      else resolve(key);
+    });
+  });
+}
+
+export function createPasswordHasher(): PasswordHasher {
   return {
-    hash: (password: string) => bcrypt.hash(password, rounds),
-    compare: (password: string, passwordHash: string) => bcrypt.compare(password, passwordHash),
+    async hash(password) {
+      const salt = randomBytes(16);
+      const key = await derivePassword(password, salt);
+      return `scrypt-v1$${salt.toString('base64url')}$${key.toString('base64url')}`;
+    },
+    async compare(password, passwordHash) {
+      if (passwordHash.startsWith('$2')) return bcrypt.compare(password, passwordHash);
+      const [format, salt, key] = passwordHash.split('$');
+      if (format !== 'scrypt-v1' || !salt || !key) return false;
+      const expected = Buffer.from(key, 'base64url');
+      const actual = await derivePassword(password, Buffer.from(salt, 'base64url'));
+      return actual.length === expected.length && timingSafeEqual(actual, expected);
+    },
   };
 }

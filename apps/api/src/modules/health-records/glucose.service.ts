@@ -1,6 +1,11 @@
 import { AppError } from '../../common/errors/app-error.js';
 import type { AuthenticatedUser } from '../auth/auth.types.js';
 import type { GlucoseListInput, GlucoseReadingInput } from './glucose.schema.js';
+import type { GlucoseReading } from './glucose.types.js';
+
+function toReading({ externalId: _externalId, ...reading }: GlucoseReading) {
+  return { ...reading, receivedAt: reading.createdAt };
+}
 
 export function createGlucoseService(
   repository: ReturnType<typeof import('./glucose.repository.js').createGlucoseRepository>,
@@ -24,7 +29,7 @@ export function createGlucoseService(
 
   async function readForPatient(patientId: string, input: GlucoseListInput) {
     return {
-      items: await repository.list(patientId, input),
+      items: (await repository.list(patientId, input)).map(toReading),
       page: input.page,
       limit: input.limit,
     };
@@ -33,7 +38,7 @@ export function createGlucoseService(
   return {
     async create(userId: string, input: GlucoseReadingInput) {
       const { user, profile } = await patientProfile(userId);
-      return repository.create(profile.id, user.id, { ...input, notes: input.notes ?? null });
+      return toReading(await repository.create(profile.id, user.id, { ...input, notes: input.notes ?? null }));
     },
 
     async listOwn(userId: string, input: GlucoseListInput) {
@@ -45,14 +50,14 @@ export function createGlucoseService(
       const { profile } = await patientProfile(userId);
       const reading = await repository.findById(id);
       if (!reading || reading.patientId !== profile.id) throw new AppError(404, 'GLUCOSE_READING_NOT_FOUND', 'Glucose reading was not found.');
-      return reading;
+      return toReading(reading);
     },
 
     async update(userId: string, id: string, input: GlucoseReadingInput) {
       const { user, profile } = await patientProfile(userId);
       const reading = await repository.update(id, profile.id, user.id, { ...input, notes: input.notes ?? null });
       if (!reading) throw new AppError(404, 'GLUCOSE_READING_NOT_FOUND', 'Glucose reading was not found.');
-      return reading;
+      return toReading(reading);
     },
 
     async remove(userId: string, id: string) {

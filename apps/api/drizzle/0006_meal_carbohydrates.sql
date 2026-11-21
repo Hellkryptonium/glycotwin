@@ -1,0 +1,2 @@
+ALTER TABLE "lifestyle_entries" ADD COLUMN "carbohydrate_grams" numeric;--> statement-breakpoint
+ALTER TABLE "lifestyle_entries" ADD CONSTRAINT "lifestyle_entries_carbohydrate_grams_check" CHECK ("lifestyle_entries"."carbohydrate_grams" IS NULL OR ("lifestyle_entries"."type" = 'meal' AND "lifestyle_entries"."carbohydrate_grams" BETWEEN 0 AND 500));

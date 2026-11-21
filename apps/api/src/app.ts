@@ -12,6 +12,8 @@ import { createHealthService, type DatabaseHealthCheck } from './modules/health/
 import { createAuthModule, type AuthModule } from './modules/auth/auth.routes.js';
 import { createConnectionModule } from './modules/connections/connection.module.js';
 import { createPatientProfileModule } from './modules/patients/profile.module.js';
+import { createCareRouter } from './modules/patients/care.routes.js';
+import { createDoctorProfileRouter } from './modules/doctors/doctor-profile.routes.js';
 import { createGlucoseModule } from './modules/health-records/glucose.module.js';
 import { createLifestyleModule } from './modules/lifestyle/lifestyle.module.js';
 import { createMedicationModule } from './modules/medications/medication.module.js';
@@ -39,8 +41,10 @@ export function createApp(options: AppOptions = {}) {
     : options.connectionRouter ?? (authModule ? createConnectionModule(getDatabase(), authModule.service).router : undefined);
   const patientProfileRouter = options.patientProfileRouter === null
     ? undefined
-    : options.patientProfileRouter ?? (authModule ? createPatientProfileModule(getDatabase(), authModule.service).router : undefined);
-  const glucoseModule = authModule ? createGlucoseModule(getDatabase(), authModule.service) : undefined;
+    : options.patientProfileRouter ?? (authModule ? createPatientProfileModule(getDatabase(), authModule.service).router
+      .use(createDoctorProfileRouter(getDatabase(), authModule.service, environment.DEMO_MODE))
+      .use(createCareRouter(getDatabase(), authModule.service)) : undefined);
+  const glucoseModule = authModule ? createGlucoseModule(getDatabase(), authModule.service, environment) : undefined;
   const glucoseRouter = options.glucoseRouter === null
     ? undefined
     : options.glucoseRouter ?? glucoseModule?.router;
@@ -55,7 +59,7 @@ export function createApp(options: AppOptions = {}) {
   app.use(cors({ origin: environment.FRONTEND_ORIGIN }));
   app.use(express.json({ limit: '1mb' }));
   app.use(express.urlencoded({ extended: true, limit: '1mb' }));
-  app.use(pinoHttp({ redact: ['req.headers.authorization', 'req.headers.cookie'] }));
+  app.use(pinoHttp({ redact: ['req.headers.authorization', 'req.headers.cookie', 'req.headers.referer', 'res.headers["set-cookie"]'] }));
   app.use(requestIdMiddleware);
   app.use(rateLimit({ windowMs: 60_000, limit: 100, standardHeaders: 'draft-8', legacyHeaders: false }));
   app.use(createRoutes(createHealthService(databaseHealthCheck), authModule?.router, connectionRouter, patientProfileRouter, glucoseRouter, analyticsRouter, lifestyleRouter, medicationRouter));

@@ -82,7 +82,11 @@ export function createMedicationRepository(database: Database) {
     },
     async updateDose(doseId: string, medicationId: string, patientId: string, actorUserId: string, input: DoseInput) {
       return database.transaction(async (transaction) => {
-        const [dose] = await transaction.update(medicationDoses).set({ ...input, takenAt: input.takenAt ?? null, updatedAt: new Date() })
+        const [dose] = await transaction.update(medicationDoses).set({
+          ...input, takenAt: input.takenAt ?? null,
+          actualDose: input.status === 'taken' ? input.actualDose : null,
+          updatedAt: new Date(),
+        })
           .where(and(eq(medicationDoses.id, doseId), eq(medicationDoses.medicationId, medicationId), eq(medicationDoses.patientId, patientId))).returning();
         if (dose) await transaction.insert(auditLogs).values({ actorUserId, action: `patient.medication_dose.${input.status}`, resourceType: 'medication_dose', resourceId: dose.id });
         return dose ?? null;

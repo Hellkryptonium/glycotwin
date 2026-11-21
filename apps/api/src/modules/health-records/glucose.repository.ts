@@ -13,6 +13,7 @@ function listConditions(patientId: string, input: GlucoseListInput) {
     input.from ? gte(glucoseReadings.measuredAt, input.from) : undefined,
     input.to ? lte(glucoseReadings.measuredAt, input.to) : undefined,
     input.context ? eq(glucoseReadings.context, input.context) : undefined,
+    input.source ? eq(glucoseReadings.source, input.source) : undefined,
   );
 }
 
@@ -57,7 +58,7 @@ export function createGlucoseRepository(database: Database) {
     async list(patientId: string, input: GlucoseListInput) {
       const rows = await database.select().from(glucoseReadings)
         .where(listConditions(patientId, input))
-        .orderBy(desc(glucoseReadings.measuredAt), desc(glucoseReadings.createdAt))
+        .orderBy(desc(glucoseReadings.measuredAt), desc(glucoseReadings.createdAt), desc(glucoseReadings.id))
         .limit(input.limit).offset((input.page - 1) * input.limit);
       return rows;
     },

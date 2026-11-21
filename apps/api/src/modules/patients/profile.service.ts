@@ -9,6 +9,7 @@ function toProfile(profile: {
   dateOfBirth: Date | null;
   gender: string | null;
   diabetesType: string | null;
+  treatmentContext: UpdatePatientProfileInput['treatmentContext'];
 }) {
   return {
     id: profile.id,
@@ -16,6 +17,7 @@ function toProfile(profile: {
     dateOfBirth: profile.dateOfBirth,
     gender: profile.gender,
     diabetesType: profile.diabetesType,
+    treatmentContext: profile.treatmentContext ?? null,
   };
 }
 
@@ -44,6 +46,7 @@ export function createPatientProfileService(
         dateOfBirth: input.dateOfBirth ? new Date(`${input.dateOfBirth}T00:00:00.000Z`) : null,
         gender: input.gender ?? null,
         diabetesType: input.diabetesType ?? null,
+        ...(input.treatmentContext !== undefined ? { treatmentContext: input.treatmentContext } : {}),
       });
       if (!profile) throw new AppError(404, 'PATIENT_PROFILE_NOT_FOUND', 'Patient profile was not found.');
       return { email: user.email, profile: toProfile(profile) };

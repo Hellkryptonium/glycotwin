@@ -1,5 +1,6 @@
 export type GlucoseUnit = 'mg/dL' | 'mmol/L';
 export type GlucoseContext = 'FASTING' | 'BEFORE_MEAL' | 'AFTER_MEAL' | 'RANDOM';
+export type GlucoseSource = 'MANUAL' | 'CGM' | 'REPLAY' | 'HEALTH_CONNECT';
 
 export interface GlucoseReading {
   id: string;
@@ -8,7 +9,9 @@ export interface GlucoseReading {
   unit: GlucoseUnit;
   measuredAt: Date;
   context: GlucoseContext;
-  source: 'MANUAL';
+  source: GlucoseSource;
+  externalId?: string | null;
+  deviceOrigin?: string | null;
   notes: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -20,4 +23,5 @@ export interface GlucoseListInput {
   from?: Date;
   to?: Date;
   context?: GlucoseContext;
+  source?: GlucoseSource;
 }

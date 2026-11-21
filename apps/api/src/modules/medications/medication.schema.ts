@@ -24,10 +24,12 @@ export const medicationListSchema = z.object({
 export const doseInputSchema = z.object({
   scheduledAt: date,
   takenAt: date.nullable().optional(),
+  actualDose: z.string().trim().min(1).max(200).nullable().optional(),
   status: z.enum(['taken', 'skipped', 'missed']),
 }).strict().superRefine((value, context) => {
   if (value.takenAt && value.takenAt > new Date()) context.addIssue({ code: z.ZodIssueCode.custom, path: ['takenAt'], message: 'Taken time cannot be in the future.' });
   if (value.status === 'taken' && !value.takenAt) context.addIssue({ code: z.ZodIssueCode.custom, path: ['takenAt'], message: 'Taken time is required for a taken dose.' });
+  if (value.status !== 'taken' && value.actualDose) context.addIssue({ code: 'custom', path: ['actualDose'], message: 'An actual dose requires a taken entry.' });
 });
 export const doseListSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),

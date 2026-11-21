@@ -1,4 +1,4 @@
-import { check, index, integer, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
+import { check, index, integer, numeric, pgTable, text, timestamp, uuid, varchar } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { patientProfiles } from './profiles.js';
 
@@ -8,6 +8,7 @@ export const lifestyleEntries = pgTable('lifestyle_entries', {
   type: varchar('type', { length: 20 }).notNull(),
   occurredAt: timestamp('occurred_at', { withTimezone: true, mode: 'date' }).notNull(),
   mealType: varchar('meal_type', { length: 20 }),
+  carbohydrateGrams: numeric('carbohydrate_grams', { mode: 'number' }),
   description: text('description'),
   activityType: varchar('activity_type', { length: 100 }),
   durationMinutes: integer('duration_minutes'),
@@ -19,6 +20,7 @@ export const lifestyleEntries = pgTable('lifestyle_entries', {
   index('lifestyle_entries_patient_occurred_at_idx').on(table.patientId, table.occurredAt),
   index('lifestyle_entries_patient_type_idx').on(table.patientId, table.type),
   check('lifestyle_entries_type_check', sql`${table.type} IN ('meal', 'activity', 'sleep', 'symptom')`),
+  check('lifestyle_entries_carbohydrate_grams_check', sql`${table.carbohydrateGrams} IS NULL OR (${table.type} = 'meal' AND ${table.carbohydrateGrams} BETWEEN 0 AND 500)`),
   check('lifestyle_entries_duration_check', sql`${table.durationMinutes} IS NULL OR ${table.durationMinutes} > 0`),
   check('lifestyle_entries_sleep_duration_check', sql`${table.sleepDurationMinutes} IS NULL OR ${table.sleepDurationMinutes} > 0`),
 ]);

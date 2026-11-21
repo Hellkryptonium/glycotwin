@@ -29,6 +29,7 @@ export const medicationDoses = pgTable('medication_doses', {
   patientId: uuid('patient_id').notNull().references(() => patientProfiles.id, { onDelete: 'restrict', onUpdate: 'cascade' }),
   scheduledAt: timestamp('scheduled_at', { withTimezone: true, mode: 'date' }).notNull(),
   takenAt: timestamp('taken_at', { withTimezone: true, mode: 'date' }),
+  actualDose: varchar('actual_dose', { length: 200 }),
   status: varchar('status', { length: 20 }).notNull(),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
@@ -36,4 +37,5 @@ export const medicationDoses = pgTable('medication_doses', {
   index('medication_doses_medication_scheduled_idx').on(table.medicationId, table.scheduledAt),
   index('medication_doses_patient_scheduled_idx').on(table.patientId, table.scheduledAt),
   check('medication_doses_status_check', sql`${table.status} IN ('taken', 'skipped', 'missed')`),
+  check('medication_doses_actual_dose_check', sql`${table.actualDose} IS NULL OR (${table.status} = 'taken' AND ${table.takenAt} IS NOT NULL)`),
 ]);

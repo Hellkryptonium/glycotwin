@@ -1,6 +1,6 @@
 import { date, index, integer, timestamp, uniqueIndex, uuid, varchar, check } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
-import { doctorVerificationStatusEnum } from './enums.js';
+import { doctorVerificationStatusEnum, treatmentContextEnum } from './enums.js';
 import { users } from './users.js';
 import { pgTable } from 'drizzle-orm/pg-core';
 
@@ -35,6 +35,7 @@ export const patientProfiles = pgTable(
     dateOfBirth: date('date_of_birth', { mode: 'date' }),
     gender: varchar('gender', { length: 100 }),
     diabetesType: varchar('diabetes_type', { length: 100 }),
+    treatmentContext: treatmentContextEnum('treatment_context'),
     createdAt: timestamp('created_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'date' }).notNull().defaultNow(),
   },

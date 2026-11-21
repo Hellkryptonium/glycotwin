@@ -9,16 +9,16 @@ export type PatientProfileInput = {
   fullName?: string | null;
 };
 
+type PatientProfileUpdate = Pick<typeof patientProfiles.$inferSelect, 'dateOfBirth' | 'gender' | 'diabetesType'> & {
+  fullName: string;
+  treatmentContext?: typeof patientProfiles.$inferSelect.treatmentContext;
+};
+
 export interface PatientProfileRepository {
   insertProfile(executor: DatabaseExecutor, input: PatientProfileInput): Promise<typeof patientProfiles.$inferSelect>;
   findByUserId(userId: string): Promise<typeof patientProfiles.$inferSelect | null>;
   findForDoctor(patientId: string, doctorId: string): Promise<typeof patientProfiles.$inferSelect | null>;
-  updateProfile(userId: string, input: {
-    fullName: string;
-    dateOfBirth: Date | null;
-    gender: string | null;
-    diabetesType: string | null;
-  }): Promise<typeof patientProfiles.$inferSelect | null>;
+  updateProfile(userId: string, input: PatientProfileUpdate): Promise<typeof patientProfiles.$inferSelect | null>;
 }
 
 export function createPatientsRepository(database: Database): PatientProfileRepository {
@@ -50,12 +50,7 @@ export function createPatientsRepository(database: Database): PatientProfileRepo
       return rows[0]?.patient_profiles ?? null;
     },
 
-    async updateProfile(userId: string, input: {
-      fullName: string;
-      dateOfBirth: Date | null;
-      gender: string | null;
-      diabetesType: string | null;
-    }) {
+    async updateProfile(userId: string, input: PatientProfileUpdate) {
       const rows = await database.update(patientProfiles)
         .set({ ...input, updatedAt: new Date() })
         .where(eq(patientProfiles.userId, userId))

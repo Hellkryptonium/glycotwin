@@ -15,11 +15,14 @@ export function getDatabase(): Database {
   }
 
   const environment = loadEnvironment();
+  const hostname = new URL(environment.DATABASE_URL).hostname;
+  const localDevelopment = environment.NODE_ENV !== 'production'
+    && ['127.0.0.1', 'localhost', '[::1]'].includes(hostname);
   sqlClient = postgres(environment.DATABASE_URL, {
     max: 10,
     idle_timeout: 20,
     connect_timeout: 10,
-    ssl: 'require',
+    ssl: localDevelopment ? false : 'require',
   });
   database = drizzle(sqlClient, { schema });
 

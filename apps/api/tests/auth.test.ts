@@ -1,18 +1,23 @@
 import { Router } from 'express';
+import bcrypt from 'bcryptjs';
 import { SignJWT } from 'jose';
 import request from 'supertest';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { createApp } from '../src/app.js';
 import { AppError } from '../src/common/errors/app-error.js';
 import { createRequireAuth, createRequireRole } from '../src/middleware/auth.middleware.js';
 import type { Database } from '../src/config/database.js';
 import { loadEnvironment } from '../src/config/env.js';
 import { doctorProfiles } from '../src/db/schema/profiles.js';
+import { authSessions } from '../src/db/schema/account-security.js';
+import { refreshTokens as refreshTokenTable } from '../src/db/schema/refresh-tokens.js';
 import { users } from '../src/db/schema/users.js';
 import { createAuthController } from '../src/modules/auth/auth.controller.js';
+import { createAuthRepository } from '../src/modules/auth/auth.repository.js';
 import { createAuthRouter } from '../src/modules/auth/auth.routes.js';
-import { createAuthService } from '../src/modules/auth/auth.service.js';
+import { createAuthService, createPasswordHasher } from '../src/modules/auth/auth.service.js';
 import { createUsersService } from '../src/modules/users/users.service.js';
+import { createUsersRepository, type DatabaseExecutor } from '../src/modules/users/users.repository.js';
 import type {
   AuthRepository,
   AuthService,
@@ -41,28 +46,22 @@ const environment: Environment = {
 function createHarness() {
   const users = new Map<string, UserRecord>();
   const refreshTokens = new Map<string, RefreshTokenRecord>();
+  const sessions = new Map<string, { userId: string; expiresAt: Date; revokedAt: Date | null }>();
   let nextId = 1;
 
   const userService: UserService = {
-    async registerDoctor(input, passwordHash) {
-      if ([...users.values()].some((user) => user.email === input.email)) {
+    async register(role, email, passwordHash, complete) {
+      if ([...users.values()].some((user) => user.email === email)) {
         throw new AppError(409, 'EMAIL_ALREADY_REGISTERED', 'An account with this email already exists.');
       }
-      const user = createUser(input.email, passwordHash, 'doctor');
+      const user = createUser(email, passwordHash, role);
+      const result = await complete({} as DatabaseExecutor, toSafeUser(user));
       users.set(user.id, user);
-      return toSafeUser(user);
-    },
-    async registerPatient(input, passwordHash) {
-      if ([...users.values()].some((user) => user.email === input.email)) {
-        throw new AppError(409, 'EMAIL_ALREADY_REGISTERED', 'An account with this email already exists.');
-      }
-      const user = createUser(input.email, passwordHash, 'patient');
-      users.set(user.id, user);
-      return toSafeUser(user);
+      return result;
     },
     async getAuthenticatedUser(userId): Promise<AuthenticatedUser | null> {
       const user = users.get(userId);
-      return user ? { ...user, passwordHash: undefined as never } : null;
+      return user ? toSafeUser(user) : null;
     },
   };
 
@@ -98,17 +97,23 @@ function createHarness() {
     async findRefreshTokenById(id) {
       return refreshTokens.get(id) ?? null;
     },
-    async insertRefreshToken(input: NewRefreshToken) {
+    async insertInitialSession(_transaction, input) {
+      sessions.set(input.sessionId, { userId: input.userId, expiresAt: input.expiresAt, revokedAt: null });
       refreshTokens.set(input.id, { ...input, revokedAt: null, createdAt: new Date() });
     },
-    async revokeRefreshToken(id, revokedAt) {
-      const token = refreshTokens.get(id);
-      if (token && !token.revokedAt) token.revokedAt = revokedAt;
+    async insertRefreshToken(input: NewRefreshToken, expectedPasswordHash) {
+      if (users.get(input.userId)?.passwordHash !== expectedPasswordHash) return false;
+      sessions.set(input.sessionId, { userId: input.userId, expiresAt: input.expiresAt, revokedAt: null });
+      refreshTokens.set(input.id, { ...input, revokedAt: null, createdAt: new Date() });
+      return true;
     },
-    async revokeUserRefreshTokens(userId, revokedAt) {
-      for (const token of refreshTokens.values()) {
-        if (token.userId === userId && !token.revokedAt) token.revokedAt = revokedAt;
-      }
+    async isSessionActive(id, userId, now) {
+      const session = sessions.get(id);
+      return !!session && session.userId === userId && !session.revokedAt && session.expiresAt > now && !!users.get(userId)?.isActive;
+    },
+    async revokeSession(id, revokedAt) {
+      const session = sessions.get(id);
+      if (session) session.revokedAt = revokedAt;
     },
     async rotateRefreshToken(oldId, input, revokedAt) {
       const oldToken = refreshTokens.get(oldId);
@@ -123,6 +128,15 @@ function createHarness() {
         if (token.userId === userId) refreshTokens.delete(id);
       }
     },
+    async updatePassword(userId, expectedPasswordHash, passwordHash) {
+      const user = users.get(userId);
+      if (!user || user.passwordHash !== expectedPasswordHash) return false;
+      user.passwordHash = passwordHash;
+      for (const session of sessions.values()) {
+        if (session.userId === userId) session.revokedAt = new Date();
+      }
+      return true;
+    },
   };
 
   const service = createAuthService({
@@ -135,12 +149,21 @@ function createHarness() {
       async compare(password, hash) { return hash === `hashed:${password}`; },
     },
   });
-  const authRouter = createAuthRouter(service, createRequireAuth(service));
+  const authRouter = createAuthRouter(service, createRequireAuth(service), environment);
   const app = createApp({ environment, authModule: { router: authRouter, service }, connectionRouter: null, databaseHealthCheck: async () => true });
   return { app, service, users, refreshTokens };
 }
 
 describe('authentication', () => {
+  it('verifies the full new password and continues to accept existing bcrypt credentials', async () => {
+    const hasher = createPasswordHasher();
+    const prefix = 'a'.repeat(72);
+    const hash = await hasher.hash(`${prefix}first`);
+    expect(await hasher.compare(`${prefix}first`, hash)).toBe(true);
+    expect(await hasher.compare(`${prefix}second`, hash)).toBe(false);
+    expect(await hasher.compare('legacy-pass', await bcrypt.hash('legacy-pass', 4))).toBe(true);
+  });
+
   it('marks demo doctor profiles verified and keeps normal mode pending', async () => {
     async function registerWithMode(demoMode: boolean) {
       let profileInput: Record<string, unknown> | undefined;
@@ -157,7 +180,7 @@ describe('authentication', () => {
       const executor = {
         insert(table: unknown) {
           if (table === users) {
-            return { values: () => ({ returning: async () => [user] }) };
+            return { values: () => ({ onConflictDoNothing: () => ({ returning: async () => [user] }) }) };
           }
           if (table === doctorProfiles) {
             return {
@@ -173,10 +196,8 @@ describe('authentication', () => {
       const fakeDatabase = {
         transaction: async (callback: (transaction: typeof executor) => Promise<unknown>) => callback(executor),
       } as unknown as Database;
-      await createUsersService(fakeDatabase, { demoMode }).registerDoctor({
-        email: user.email,
-        password: 'StrongPassword1',
-      }, user.passwordHash);
+      await createUsersService(fakeDatabase, { demoMode })
+        .register('doctor', user.email, user.passwordHash, async (_transaction, safeUser) => safeUser);
       return profileInput;
     }
 
@@ -211,7 +232,7 @@ describe('authentication', () => {
     const executor = {
       insert(table: unknown) {
         if (table === users) {
-          return { values: () => ({ returning: async () => [user] }) };
+          return { values: () => ({ onConflictDoNothing: () => ({ returning: async () => [user] }) }) };
         }
         if (table === doctorProfiles) {
           return { values: () => ({ returning: async () => { throw new Error('profile write failed'); } }) };
@@ -231,11 +252,92 @@ describe('authentication', () => {
     } as unknown as Database;
     const service = createUsersService(fakeDatabase);
 
-    await expect(service.registerDoctor({
-      email: 'rollback@example.com',
-      password: 'StrongPassword1',
-    }, user.passwordHash)).rejects.toThrow('profile write failed');
+    await expect(service.register('doctor', user.email, user.passwordHash, async (_transaction, safeUser) => safeUser))
+      .rejects.toThrow('profile write failed');
     expect(rolledBack).toBe(true);
+  });
+
+  it('rolls back the account and profile when writing the first refresh token fails', async () => {
+    const user = {
+      id: '00000000-0000-4000-8000-000000000007',
+      email: 'session-rollback@example.com',
+      passwordHash: 'test-only-stored-hash',
+      role: 'doctor' as const,
+      isActive: true,
+      emailVerifiedAt: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    const expectedWrites = [users, doctorProfiles, authSessions, refreshTokenTable];
+    const committed: unknown[] = [];
+    const attempts: unknown[][] = [];
+    const profile = { id: 'doctor-profile', fullName: 'Sample Clinician', verificationStatus: 'pending' };
+    let rejectRefreshInsert = true;
+
+    const database = {
+      async transaction(callback: (executor: unknown) => Promise<unknown>) {
+        const writes: unknown[] = [];
+        attempts.push(writes);
+        const transaction = {
+          insert(table: unknown) {
+            writes.push(table);
+            if (table === users) return { values: () => ({ onConflictDoNothing: () => ({ returning: async () => [user] }) }) };
+            if (table === doctorProfiles) return { values: () => ({ returning: async () => [profile] }) };
+            if (table === authSessions) return { values: async () => undefined };
+            if (table === refreshTokenTable) return { values: async () => {
+              if (rejectRefreshInsert) throw new Error('refresh token write failed');
+            } };
+            throw new Error('unexpected table');
+          },
+        };
+        const result = await callback(transaction);
+        committed.push(...writes);
+        return result;
+      },
+      select() {
+        return { from: (table: unknown) => ({ where: () => ({ limit: async () => {
+          if (!committed.includes(table)) return [];
+          return table === users ? [user] : [profile];
+        } }) }) };
+      },
+    } as unknown as Database;
+    const service = createAuthService({
+      environment,
+      userService: createUsersService(database),
+      userRepository: createUsersRepository(database),
+      authRepository: createAuthRepository(database),
+      passwordHasher: { hash: async () => user.passwordHash, compare: async () => false },
+    });
+    const input = { email: user.email, password: 'sunnyday' };
+
+    await expect(service.registerDoctor(input)).rejects.toThrow('refresh token write failed');
+    expect(attempts).toEqual([expectedWrites]);
+    expect(committed).toEqual([]);
+
+    rejectRefreshInsert = false;
+    const registration = await service.registerDoctor(input);
+    expect(attempts).toEqual([expectedWrites, expectedWrites]);
+    expect(committed).toEqual(expectedWrites);
+    expect(registration).toMatchObject({ email: user.email, accessToken: expect.any(String), refreshToken: expect.any(String) });
+    expect(registration).not.toHaveProperty('passwordHash');
+    const currentUser = await service.getCurrentUser(user.id);
+    expect(currentUser).toMatchObject({ doctorProfile: { fullName: profile.fullName } });
+    expect(currentUser).not.toHaveProperty('passwordHash');
+  });
+
+  it('treats only the email conflict as an existing account before writing a profile or session', async () => {
+    const onConflictDoNothing = vi.fn(() => ({ returning: async () => [] }));
+    const insert = vi.fn(() => ({ values: () => ({ onConflictDoNothing }) }));
+    const complete = vi.fn();
+    const database = {
+      transaction: async (callback: (transaction: { insert: typeof insert }) => Promise<unknown>) => callback({ insert }),
+    } as unknown as Database;
+
+    await expect(createUsersService(database).register('patient', 'duplicate@example.com', 'stored-hash', complete))
+      .rejects.toMatchObject({ statusCode: 409, code: 'EMAIL_ALREADY_REGISTERED' });
+    expect(onConflictDoNothing).toHaveBeenCalledWith({ target: users.email });
+    expect(insert).toHaveBeenCalledExactlyOnceWith(users);
+    expect(complete).not.toHaveBeenCalled();
   });
 
   it('registers doctors as pending-profile accounts without returning hashes', async () => {
@@ -308,10 +410,50 @@ describe('authentication', () => {
     };
     harness.users.set(user.id, user);
     const initial = await harness.service.login(user.email, 'x');
+    const otherDevice = await harness.service.login(user.email, 'x');
     const rotated = await harness.service.refresh(initial.refreshToken);
     expect(rotated.refreshToken).not.toBe(initial.refreshToken);
+    expect(rotated.sessionExpiresAt).toEqual(initial.sessionExpiresAt);
+    await expect(harness.service.refresh(initial.refreshToken)).rejects.toMatchObject({ code: 'REFRESH_ALREADY_ROTATED' });
+    harness.refreshTokens.get(initial.refreshToken.split('.')[0]!)!.revokedAt = new Date(Date.now() - 11_000);
     await expect(harness.service.refresh(initial.refreshToken)).rejects.toMatchObject({ code: 'INVALID_REFRESH_TOKEN' });
     await expect(harness.service.refresh(rotated.refreshToken)).rejects.toMatchObject({ code: 'INVALID_REFRESH_TOKEN' });
+    await expect(harness.service.refresh(otherDevice.refreshToken)).resolves.toMatchObject({ accessToken: expect.any(String) });
+  });
+
+  it('starts a seven-day session at signup and caps subsequent refreshes at that date', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    const start = new Date('2026-11-20T00:00:00Z');
+    try {
+      vi.setSystemTime(start);
+      const { service } = createHarness();
+      const tokens = await service.registerPatient({ email: 'new@example.com', password: 'sunnyday' });
+      const cutoff = new Date('2026-11-27T00:00:00Z');
+      expect(tokens.sessionExpiresAt).toEqual(cutoff);
+      vi.setSystemTime(new Date(cutoff.getTime() - 60_000));
+      const refreshed = await service.refresh(tokens.refreshToken);
+      expect(refreshed.sessionExpiresAt).toEqual(cutoff);
+      expect(refreshed.expiresIn).toBe(60);
+      vi.setSystemTime(cutoff);
+      await expect(service.refresh(refreshed.refreshToken)).rejects.toMatchObject({ code: 'INVALID_REFRESH_TOKEN' });
+      await expect(service.verifyAccessToken(refreshed.accessToken)).rejects.toMatchObject({ code: 'INVALID_ACCESS_TOKEN' });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps web refresh tokens in a cookie and validates the dashboard origin', async () => {
+    const api = request(createHarness().app);
+    const web = { Origin: environment.FRONTEND_ORIGIN, 'X-GlycoTwin-Client': 'web' };
+    const signup = await api.post('/api/v1/auth/register/doctor').set(web).send({ email: 'example@clinic.test', password: 'sunnyday' }).expect(201);
+    expect(signup.body.data.refreshToken).toBeUndefined();
+    expect(signup.body.data.accessToken).toEqual(expect.any(String));
+    expect(signup.headers['cache-control']).toBe('no-store');
+    const setCookie = signup.headers['set-cookie'][0];
+    expect(setCookie).toMatch(/Path=\/backend\/auth;.*HttpOnly; SameSite=Strict/);
+    const cookie = setCookie.split(';')[0];
+    await api.post('/api/v1/auth/refresh').set({ ...web, Origin: 'https://other.example' }).set('Cookie', cookie).send({}).expect(403);
+    await api.post('/api/v1/auth/refresh').set(web).set('Cookie', cookie).send({}).expect(200);
   });
 
   it('requires authentication for me, supports logout, and enforces roles', async () => {
@@ -329,7 +471,7 @@ describe('authentication', () => {
     const roleApp = createApp({ environment, authModule: { router: createAuthRouter(harness.service, createRequireAuth(harness.service)), service: harness.service }, connectionRouter: null, additionalRoutes: roleRouter });
     const forbidden = await request(roleApp).get('/role-check').set('authorization', `Bearer ${tokens.accessToken}`);
     expect(forbidden.status).toBe(403);
-    const logout = await request(harness.app).post('/api/v1/auth/logout').set('authorization', `Bearer ${tokens.accessToken}`).send({ refreshToken: tokens.refreshToken });
+    const logout = await request(harness.app).post('/api/v1/auth/logout').send({ refreshToken: tokens.refreshToken });
     expect(logout.status).toBe(204);
     await expect(harness.service.refresh(tokens.refreshToken)).rejects.toMatchObject({ code: 'INVALID_REFRESH_TOKEN' });
   });
@@ -347,11 +489,25 @@ describe('authentication', () => {
 
     const response = await request(harness.app)
       .delete('/api/v1/auth/account')
-      .set('authorization', `Bearer ${tokens.accessToken}`);
+      .set('authorization', `Bearer ${tokens.accessToken}`).send({ currentPassword: 'x' });
 
     expect(response.status).toBe(204);
     expect(harness.users.has(user.id)).toBe(false);
     expect(harness.users.has(otherUser.id)).toBe(true);
     expect((await request(harness.app).get('/api/v1/auth/me').set('authorization', `Bearer ${tokens.accessToken}`)).status).toBe(401);
+  });
+
+  it('confirms the current password and invalidates active sessions on a credential change', async () => {
+    const harness = createHarness();
+    const first = await harness.service.registerPatient({ email: 'change@example.com', password: 'sunnyday' });
+    const second = await harness.service.login(first.email, 'sunnyday');
+    const api = request(harness.app);
+    const bearer = { Authorization: `Bearer ${first.accessToken}` };
+    await api.delete('/api/v1/auth/account').set(bearer).send({ currentPassword: 'wrong' }).expect(403);
+    await api.put('/api/v1/auth/account/password').set(bearer).send({ currentPassword: 'wrong', newPassword: 'new phrase' }).expect(403);
+    await api.put('/api/v1/auth/account/password').set(bearer).send({ currentPassword: 'sunnyday', newPassword: 'new phrase' }).expect(204);
+    await api.get('/api/v1/auth/me').set(bearer).expect(401);
+    await expect(harness.service.refresh(second.refreshToken)).rejects.toMatchObject({ code: 'INVALID_REFRESH_TOKEN' });
+    await expect(harness.service.login(first.email, 'new phrase')).resolves.toMatchObject({ accessToken: expect.any(String) });
   });
 });

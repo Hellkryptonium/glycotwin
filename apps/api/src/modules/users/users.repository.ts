@@ -34,13 +34,10 @@ export function createUsersRepository(database: Database) {
       email: string;
       passwordHash: string;
       role: 'doctor' | 'patient';
-    }): Promise<UserRecord> {
-      const rows = await executor.insert(users).values(input).returning();
-      const row = rows[0];
-      if (!row) {
-        throw new Error('User insert did not return a row');
-      }
-      return toUserRecord(row);
+    }): Promise<UserRecord | null> {
+      const [row] = await executor.insert(users).values(input)
+        .onConflictDoNothing({ target: users.email }).returning();
+      return row ? toUserRecord(row) : null;
     },
   };
 }

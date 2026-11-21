@@ -1,5 +1,5 @@
 import type { RequestHandler } from 'express';
-import { lifestyleIdSchema, lifestyleInputSchema, lifestyleListSchema } from './lifestyle.schema.js';
+import { lifestyleCreateSchema, lifestyleIdSchema, lifestyleInputSchema, lifestyleListSchema } from './lifestyle.schema.js';
 import type { LifestyleInput, LifestyleListInput } from './lifestyle.schema.js';
 type LifestyleService = {
   create(userId: string, input: LifestyleInput): Promise<unknown>;
@@ -10,7 +10,7 @@ type LifestyleService = {
   remove(userId: string, id: string): Promise<void>;
 };
 export function createLifestyleController(service: LifestyleService) {
-  const create: RequestHandler = async (request, response, next) => { try { response.status(201).json({ success: true, data: await service.create(response.locals.authenticatedUser!.sub, lifestyleInputSchema.parse(request.body)) }); } catch (error) { next(error); } };
+  const create: RequestHandler = async (request, response, next) => { try { response.status(201).json({ success: true, data: await service.create(response.locals.authenticatedUser!.sub, lifestyleCreateSchema.parse(request.body)) }); } catch (error) { next(error); } };
   const listOwn: RequestHandler = async (request, response, next) => { try { response.json({ success: true, data: await service.listOwn(response.locals.authenticatedUser!.sub, lifestyleListSchema.parse(request.query)) }); } catch (error) { next(error); } };
   const listOwnForType = (type: 'meal' | 'activity' | 'sleep' | 'symptom'): RequestHandler => async (request, response, next) => {
     try {

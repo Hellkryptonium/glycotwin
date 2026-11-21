@@ -17,6 +17,7 @@ export interface ActiveUserVerifier extends AccessTokenVerifier {
 
 export function createRequireAuth(verifier: AccessTokenVerifier): RequestHandler {
   return async (request, response, next) => {
+    response.set('Cache-Control', 'no-store');
     try {
       const authorization = request.header('authorization');
       const token = authorization?.startsWith('Bearer ') ? authorization.slice(7).trim() : null;

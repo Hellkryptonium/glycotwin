@@ -16,4 +16,5 @@ export const invitationStatusEnum = pgEnum('invitation_status', [
 export const relationshipStatusEnum = pgEnum('relationship_status', ['active', 'revoked']);
 export const glucoseUnitEnum = pgEnum('glucose_unit', ['mg/dL', 'mmol/L']);
 export const glucoseContextEnum = pgEnum('glucose_context', ['FASTING', 'BEFORE_MEAL', 'AFTER_MEAL', 'RANDOM']);
-export const glucoseSourceEnum = pgEnum('glucose_source', ['MANUAL']);
+export const glucoseSourceEnum = pgEnum('glucose_source', ['MANUAL', 'CGM', 'REPLAY', 'HEALTH_CONNECT']);
+export const treatmentContextEnum = pgEnum('treatment_context', ['INSULIN', 'NON_INSULIN', 'LIFESTYLE', 'UNKNOWN']);

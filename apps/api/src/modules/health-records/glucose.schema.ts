@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
-const glucoseValue = z.string().trim().regex(/^\d+(?:\.\d{1,4})?$/, 'Glucose value must be a positive decimal').refine((value) => {
+export const glucoseValue = z.string().trim().regex(/^\d+(?:\.\d{1,4})?$/, 'Glucose value must be a positive decimal').refine((value) => {
   const numeric = Number(value);
   return Number.isFinite(numeric) && numeric > 0 && numeric <= 1000;
 }, 'Glucose value must be between 0 and 1000');
 
-const measuredAt = z.string().datetime({ offset: true }).transform((value) => new Date(value)).superRefine((value, context) => {
+export const measuredAt = z.string().datetime({ offset: true }).transform((value) => new Date(value)).superRefine((value, context) => {
   if (value > new Date()) context.addIssue({ code: z.ZodIssueCode.custom, message: 'Measurement time cannot be in the future' });
 });
 
@@ -25,6 +25,7 @@ export const glucoseListSchema = z.object({
   from: z.string().datetime({ offset: true }).transform((value) => new Date(value)).optional(),
   to: z.string().datetime({ offset: true }).transform((value) => new Date(value)).optional(),
   context: z.enum(['FASTING', 'BEFORE_MEAL', 'AFTER_MEAL', 'RANDOM']).optional(),
+  source: z.enum(['MANUAL', 'CGM', 'REPLAY', 'HEALTH_CONNECT']).optional(),
 }).strict().superRefine((value, context) => {
   if (value.from && value.to && value.from > value.to) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ['from'], message: 'From must be before to' });

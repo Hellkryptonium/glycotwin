@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createLifestyleService } from '../src/modules/lifestyle/lifestyle.service.js';
 import type { AuthenticatedUser } from '../src/modules/auth/auth.types.js';
-import type { LifestyleInput } from '../src/modules/lifestyle/lifestyle.schema.js';
+import { lifestyleCreateSchema, lifestyleInputSchema, type LifestyleInput } from '../src/modules/lifestyle/lifestyle.schema.js';
 
 const patientId = '00000000-0000-4000-8000-000000000013';
 const doctorProfileId = '00000000-0000-4000-8000-000000000011';
@@ -47,5 +47,28 @@ describe('lifestyle tracking', () => {
     const { service } = harness();
     await expect(service.getOwn('other', 'entry-1')).rejects.toMatchObject({ code: 'LIFESTYLE_ENTRY_NOT_FOUND' });
     await expect(service.listForDoctor('doctor', otherPatientId, { page: 1, limit: 20 })).rejects.toMatchObject({ code: 'PATIENT_RELATIONSHIP_REQUIRED' });
+  });
+
+  it('accepts older meal payloads, zero grams and fractional estimates', () => {
+    const body = { ...meal, occurredAt: meal.occurredAt.toISOString() };
+    expect(lifestyleCreateSchema.parse(body)).not.toHaveProperty('carbohydrateGrams');
+    for (const carbohydrateGrams of [0, 24.5]) {
+      expect(lifestyleCreateSchema.parse({ ...body, carbohydrateGrams })).toMatchObject({ carbohydrateGrams });
+    }
+  });
+
+  it('allows explicit removal on update and rejects invalid or conflicting estimates', () => {
+    const body = { ...meal, occurredAt: meal.occurredAt.toISOString() };
+    expect(lifestyleInputSchema.safeParse({ ...body, carbohydrateGrams: null }).success).toBe(true);
+    expect(lifestyleInputSchema.safeParse({ ...body, clearCarbohydrateGrams: true }).success).toBe(true);
+    expect(lifestyleCreateSchema.safeParse({ ...body, clearCarbohydrateGrams: true }).success).toBe(false);
+    expect(lifestyleInputSchema.safeParse({ ...body, carbohydrateGrams: 24, clearCarbohydrateGrams: true }).success).toBe(false);
+    for (const value of [-1, 501, '25']) {
+      expect(lifestyleInputSchema.safeParse({ ...body, carbohydrateGrams: value }).success).toBe(false);
+    }
+    expect(lifestyleInputSchema.safeParse({
+      type: 'activity', activityType: 'walk', durationMinutes: 20,
+      occurredAt: body.occurredAt, carbohydrateGrams: 20,
+    }).success).toBe(false);
   });
 });

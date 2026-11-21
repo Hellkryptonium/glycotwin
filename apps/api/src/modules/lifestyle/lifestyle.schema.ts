@@ -14,12 +14,33 @@ export const lifestyleListSchema = z.object({
 }).strict().superRefine((value, context) => {
   if (value.from && value.to && value.from > value.to) context.addIssue({ code: z.ZodIssueCode.custom, path: ['from'], message: 'From must be before to' });
 });
-const base = z.object({ occurredAt, notes });
+const base = z.object({
+  occurredAt,
+  notes,
+  carbohydrateGrams: z.undefined().optional(),
+  clearCarbohydrateGrams: z.undefined().optional(),
+});
 export const lifestyleInputSchema = z.discriminatedUnion('type', [
-  base.extend({ type: z.literal('meal'), mealType: z.enum(['breakfast', 'lunch', 'dinner', 'snack', 'other']), description: z.string().trim().min(1).max(2000), activityType: z.undefined().optional(), durationMinutes: z.undefined().optional(), sleepDurationMinutes: z.undefined().optional() }),
+  base.extend({
+    type: z.literal('meal'),
+    mealType: z.enum(['breakfast', 'lunch', 'dinner', 'snack', 'other']),
+    description: z.string().trim().min(1).max(2000),
+    carbohydrateGrams: z.number().min(0).max(500).nullable().optional(),
+    clearCarbohydrateGrams: z.literal(true).optional(),
+    activityType: z.undefined().optional(),
+    durationMinutes: z.undefined().optional(),
+    sleepDurationMinutes: z.undefined().optional(),
+  }),
   base.extend({ type: z.literal('activity'), activityType: z.string().trim().min(1).max(100), durationMinutes: z.number().int().min(1).max(1440), description: z.string().trim().max(2000).optional(), mealType: z.undefined().optional(), sleepDurationMinutes: z.undefined().optional() }),
   base.extend({ type: z.literal('sleep'), sleepDurationMinutes: z.number().int().min(1).max(1440), description: z.string().trim().max(2000).optional(), mealType: z.undefined().optional(), activityType: z.undefined().optional(), durationMinutes: z.undefined().optional() }),
   base.extend({ type: z.literal('symptom'), description: z.string().trim().min(1).max(2000), mealType: z.undefined().optional(), activityType: z.undefined().optional(), durationMinutes: z.undefined().optional(), sleepDurationMinutes: z.undefined().optional() }),
-]);
+]).refine(
+  (input) => input.type !== 'meal' || input.clearCarbohydrateGrams !== true || input.carbohydrateGrams == null,
+  { path: ['carbohydrateGrams'], message: 'Send a carbohydrate estimate or clear it in one update' },
+);
+export const lifestyleCreateSchema = lifestyleInputSchema.refine(
+  (input) => input.type !== 'meal' || input.clearCarbohydrateGrams !== true,
+  { path: ['clearCarbohydrateGrams'], message: 'A carbohydrate estimate can only be cleared on an existing meal' },
+);
 export type LifestyleInput = z.infer<typeof lifestyleInputSchema>;
 export type LifestyleListInput = z.infer<typeof lifestyleListSchema>;

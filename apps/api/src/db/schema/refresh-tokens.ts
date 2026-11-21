@@ -1,12 +1,14 @@
 import { index, timestamp, uniqueIndex, uuid, varchar } from 'drizzle-orm/pg-core';
 import { pgTable } from 'drizzle-orm/pg-core';
 import { users } from './users.js';
+import { authSessions } from './account-security.js';
 
 export const refreshTokens = pgTable(
   'refresh_tokens',
   {
     id: uuid('id').defaultRandom().primaryKey(),
     userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'restrict', onUpdate: 'cascade' }),
+    sessionId: uuid('session_id').references(() => authSessions.id, { onDelete: 'cascade' }),
     tokenHash: varchar('token_hash', { length: 255 }).notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true, mode: 'date' }).notNull(),
     revokedAt: timestamp('revoked_at', { withTimezone: true, mode: 'date' }),
