@@ -12,6 +12,7 @@ Copy `.env.example` to `.env` and set values locally:
 
 - `NODE_ENV`
 - `DEMO_MODE`
+- `AUTO_APPROVE_DOCTOR_SIGNUPS` (default `false`): set to `true` for a synthetic beta to grant new doctor accounts immediate access to clinician features. Patient approval is still required for access to patient records. This applies to every new doctor signup and does not update existing profiles.
 - `PORT`
 - `HOST`
 - `DATABASE_URL`

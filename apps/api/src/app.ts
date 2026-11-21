@@ -33,16 +33,17 @@ export interface AppOptions {
 export function createApp(options: AppOptions = {}) {
   const environment = options.environment ?? loadEnvironment();
   const databaseHealthCheck = options.databaseHealthCheck ?? checkDatabaseConnection;
+  const autoApproveDoctors = environment.DEMO_MODE || environment.AUTO_APPROVE_DOCTOR_SIGNUPS;
   const authModule = options.authModule === null
     ? undefined
-    : options.authModule ?? createAuthModule(getDatabase(), environment);
+    : options.authModule ?? createAuthModule(getDatabase(), environment, autoApproveDoctors);
   const connectionRouter = options.connectionRouter === null
     ? undefined
     : options.connectionRouter ?? (authModule ? createConnectionModule(getDatabase(), authModule.service).router : undefined);
   const patientProfileRouter = options.patientProfileRouter === null
     ? undefined
     : options.patientProfileRouter ?? (authModule ? createPatientProfileModule(getDatabase(), authModule.service).router
-      .use(createDoctorProfileRouter(getDatabase(), authModule.service, environment.DEMO_MODE))
+      .use(createDoctorProfileRouter(getDatabase(), authModule.service, autoApproveDoctors))
       .use(createCareRouter(getDatabase(), authModule.service)) : undefined);
   const glucoseModule = authModule ? createGlucoseModule(getDatabase(), authModule.service, environment) : undefined;
   const glucoseRouter = options.glucoseRouter === null

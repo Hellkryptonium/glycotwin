@@ -32,7 +32,7 @@ import type { Environment } from '../src/config/env.js';
 
 const environment: Environment = {
   NODE_ENV: 'test',
-  DEMO_MODE: false,
+  DEMO_MODE: false, AUTO_APPROVE_DOCTOR_SIGNUPS: false,
   PORT: 5000,
   DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
   JWT_ACCESS_SECRET: 'a'.repeat(32),
@@ -164,12 +164,12 @@ describe('authentication', () => {
     expect(await hasher.compare('legacy-pass', await bcrypt.hash('legacy-pass', 4))).toBe(true);
   });
 
-  it('marks demo doctor profiles verified and keeps normal mode pending', async () => {
-    async function registerWithMode(demoMode: boolean) {
+  it('approves new doctor profiles only when automatic approval is enabled', async () => {
+    async function registerWithMode(autoApproveDoctors: boolean) {
       let profileInput: Record<string, unknown> | undefined;
       const user = {
         id: '00000000-0000-4000-8000-000000000006',
-        email: `${demoMode ? 'demo' : 'normal'}@example.com`,
+        email: `${autoApproveDoctors ? 'demo' : 'normal'}@example.com`,
         passwordHash: 'hashed:password',
         role: 'doctor' as const,
         isActive: true,
@@ -196,7 +196,7 @@ describe('authentication', () => {
       const fakeDatabase = {
         transaction: async (callback: (transaction: typeof executor) => Promise<unknown>) => callback(executor),
       } as unknown as Database;
-      await createUsersService(fakeDatabase, { demoMode })
+      await createUsersService(fakeDatabase, { autoApproveDoctors })
         .register('doctor', user.email, user.passwordHash, async (_transaction, safeUser) => safeUser);
       return profileInput;
     }

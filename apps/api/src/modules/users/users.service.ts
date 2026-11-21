@@ -9,7 +9,7 @@ function toSafeUser({ id, email, role, isActive, emailVerifiedAt, createdAt, upd
   return { id, email, role, isActive, emailVerifiedAt, createdAt, updatedAt };
 }
 
-export function createUsersService(database: Database, options: { demoMode?: boolean } = {}): UserService {
+export function createUsersService(database: Database, options: { autoApproveDoctors?: boolean } = {}): UserService {
   const usersRepository = createUsersRepository(database);
   const doctorsRepository = createDoctorsRepository(database);
   const patientsRepository = createPatientsRepository(database);
@@ -23,7 +23,7 @@ export function createUsersService(database: Database, options: { demoMode?: boo
         if (role === 'doctor') {
           await doctorsRepository.insertProfile(transaction, {
             userId: user.id,
-            verificationStatus: options.demoMode ? 'verified' : 'pending',
+            verificationStatus: options.autoApproveDoctors ? 'verified' : 'pending',
           });
         } else {
           await patientsRepository.insertProfile(transaction, { userId: user.id });

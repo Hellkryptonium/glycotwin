@@ -23,7 +23,7 @@ function summarizeDoctor(profile: typeof doctorProfiles.$inferSelect): DoctorPro
   return { id, fullName, specialization, hospitalOrClinic, medicalRegistrationNumber, medicalCouncil, yearsOfExperience, verificationStatus };
 }
 
-export function createDoctorProfileRouter(database: Database, authService: AuthService, demoMode: boolean) {
+export function createDoctorProfileRouter(database: Database, authService: AuthService, autoApproveDoctors: boolean) {
   const router = Router();
   const repository = createDoctorsRepository(database);
   const requireDoctor = [createRequireAuth(authService), createRequireActiveAuth(authService), createRequireRole('doctor')];
@@ -45,7 +45,7 @@ export function createDoctorProfileRouter(database: Database, authService: AuthS
         || (input.medicalCouncil !== undefined && input.medicalCouncil !== previous.medicalCouncil);
       const [updated] = await transaction.update(doctorProfiles).set({
         ...input,
-        verificationStatus: registrationChanged && !demoMode ? 'pending' : previous.verificationStatus,
+        verificationStatus: registrationChanged && !autoApproveDoctors ? 'pending' : previous.verificationStatus,
         updatedAt: new Date(),
       }).where(and(eq(doctorProfiles.id, previous.id), eq(doctorProfiles.userId, user.id))).returning();
       if (!updated) throw new AppError(409, 'DOCTOR_PROFILE_UPDATED', 'Reload your profile and try again.');

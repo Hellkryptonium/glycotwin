@@ -7,7 +7,7 @@ import type { Environment } from '../src/config/env.js';
 
 const testEnvironment: Environment = {
   NODE_ENV: 'test',
-  DEMO_MODE: false,
+  DEMO_MODE: false, AUTO_APPROVE_DOCTOR_SIGNUPS: false,
   PORT: 5000,
   DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
   JWT_ACCESS_SECRET: 'a'.repeat(32),

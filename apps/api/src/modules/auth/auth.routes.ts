@@ -41,11 +41,11 @@ export function createAuthRouter(service: AuthControllerService, requireAuth: Re
   return router;
 }
 
-export function createAuthModule(database: Database, environment: Environment): AuthModule {
+export function createAuthModule(database: Database, environment: Environment, autoApproveDoctors: boolean): AuthModule {
   const userRepository = createUsersRepository(database);
   const service = createAuthService({
     environment,
-    userService: createUsersService(database, { demoMode: environment.DEMO_MODE }),
+    userService: createUsersService(database, { autoApproveDoctors }),
     userRepository,
     authRepository: createAuthRepository(database),
     passwordHasher: createPasswordHasher(),

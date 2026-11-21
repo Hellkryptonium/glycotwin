@@ -10,7 +10,7 @@ import { createConnectionService } from '../src/modules/connections/connection.s
 import type { ConnectionRepository, ConnectedPatient, InvitationSummary, PatientSearchResult } from '../src/modules/connections/connection.types.js';
 
 const environment: Environment = {
-  NODE_ENV: 'test', DEMO_MODE: false, PORT: 5000,
+  NODE_ENV: 'test', DEMO_MODE: false, AUTO_APPROVE_DOCTOR_SIGNUPS: false, PORT: 5000,
   DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
   JWT_ACCESS_SECRET: 'a'.repeat(32), JWT_REFRESH_SECRET: 'b'.repeat(32),
   JWT_ISSUER: 'glycotwin-api', JWT_AUDIENCE: 'glycotwin-clients', BCRYPT_ROUNDS: 10,
