@@ -7,12 +7,48 @@ on:
         required: true
         type: string
 
+env:
+  DEVICE: watch
+  BETA_NUMBER: ${{ inputs.beta_number }}
+
 jobs:
-  release:
+  build:
     permissions:
-      contents: write
+      contents: read
     uses: ./.github/workflows/android-release.yml
     with:
       device: watch
       project: wearable
       beta_number: ${{ inputs.beta_number }}
+
+  publish:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment: android-beta
+    permissions:
+      contents: write
+    concurrency: android-beta-publication-watch
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: actions/download-artifact@v4
+        with:
+          name: unsigned-watch
+      - run: '"$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" "build-tools;36.0.0"'
+      - name: Sign and verify the APK
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ vars.ANDROID_KEY_ALIAS }}
+          EXPECTED_CERT: ${{ vars.ANDROID_CERT_SHA256 }}
+        run: bash .github/scripts/sign-android.sh
+      - name: Publish beta
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash .github/scripts/publish-android.sh
