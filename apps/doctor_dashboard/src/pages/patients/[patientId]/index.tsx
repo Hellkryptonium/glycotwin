@@ -2,29 +2,45 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { AppShell } from '../../../components/layout/app-shell';
+import { DoctorCareWorkspace } from '../../../components/care/doctor-care-workspace';
+import { PatientTimeline, sourceLabels } from '../../../components/timeline/patient-timeline';
 import styles from './patient-detail.module.css';
 import { StateMessage } from '../../../components/feedback/state-message';
 import { normalizeApiError } from '../../../services/api';
 import { usePatientGlucoseReadings, usePatientLifestyle, usePatientMedicationDoses, usePatientMedications, usePatientProfile } from '../../../queries/patients.queries';
 import { usePatientGlucoseAnalytics } from '../../../queries/patients.queries';
-import type { AnalyticsRange } from '../../../types/api';
+import type { AnalyticsRange, GlucoseAnalyticsReading, PatientProfile, TimelineEntry } from '../../../types/api';
 import { useState } from 'react';
 
-function TrendChart({ readings }: { readings: Array<{ value: string; measuredAt: string; unit: string }> }) {
+const treatmentLabels: Record<NonNullable<PatientProfile['treatmentContext']>, string> = {
+  INSULIN: 'Insulin',
+  NON_INSULIN: 'Medication without insulin',
+  LIFESTYLE: 'Lifestyle management',
+  UNKNOWN: 'Unknown',
+};
+
+function TrendChart({ readings }: { readings: GlucoseAnalyticsReading[] }) {
   if (!readings.length) return <StateMessage kind="empty">No readings in this range.</StateMessage>;
   const values = readings.map((reading) => Number(reading.value));
+  const times = readings.map((reading) => Date.parse(reading.measuredAt));
   const min = Math.min(...values);
   const max = Math.max(...values);
+  const start = Math.min(...times);
+  const end = Math.max(...times);
   const width = 720;
   const height = 220;
-  const y = (value: number) => height - 20 - ((value - min) / Math.max(max - min, 1)) * (height - 40);
-  const points = readings.map((reading, index) => `${(index / Math.max(readings.length - 1, 1)) * (width - 20) + 10},${y(Number(reading.value))}`).join(' ');
-  return <div className={styles.chartWrap}><svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Glucose readings over time" className={styles.chart}>
-    <polyline points={points} fill="none" stroke="var(--cobalt)" strokeWidth="3" />
-    {readings.map((reading, index) => <circle key={`${reading.measuredAt}-${index}`} cx={(index / Math.max(readings.length - 1, 1)) * (width - 20) + 10} cy={y(Number(reading.value))} r="4" fill="var(--tomato)">
-      <title>{`${new Date(reading.measuredAt).toLocaleString()}: ${reading.value} ${reading.unit}`}</title>
+  const x = (time: number) => start === end ? width / 2 : 10 + ((time - start) / (end - start)) * (width - 20);
+  const y = (value: number) => min === max ? height / 2 : height - 20 - ((value - min) / (max - min)) * (height - 40);
+  return <div className={styles.chartWrap}><svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label="Recorded glucose readings by measurement time" className={styles.chart}>
+    {readings.map((reading, index) => <circle key={`${reading.measuredAt}-${index}`} cx={x(times[index])} cy={y(values[index])} r="4" fill="var(--cobalt)">
+      <title>{`${new Date(times[index]).toLocaleString()}: ${reading.value} ${reading.unit}${reading.source ? ` · ${sourceLabels[reading.source]}` : ''}`}</title>
     </circle>)}
-  </svg><div className={styles.chartAxis}><span>{min}</span><span>{max}</span></div></div>;
+  </svg>
+  <div className={styles.chartAxis}>
+    <time dateTime={new Date(start).toISOString()}>{new Date(start).toLocaleString()}</time>
+    {start !== end && <time dateTime={new Date(end).toISOString()}>{new Date(end).toLocaleString()}</time>}
+  </div>
+  <p className={styles.readingCount}>Recorded values from {min} to {max} {readings[0].unit}. Each point is a reading at its measured time.</p></div>;
 }
 
 export default function PatientDetailPage() {
@@ -36,6 +52,7 @@ export default function PatientDetailPage() {
   const [to, setTo] = useState('');
   const [context, setContext] = useState('');
   const [range, setRange] = useState<AnalyticsRange>('7d');
+  const [review, setReview] = useState<{ patientId: string; event: TimelineEntry }>();
   const glucose = usePatientGlucoseReadings(patientId, { page, limit: 10, ...(from && { from: `${from}T00:00:00.000Z` }), ...(to && { to: `${to}T23:59:59.999Z` }), ...(context && { context }) });
   const analytics = usePatientGlucoseAnalytics(patientId, range);
   const lifestyle = usePatientLifestyle(patientId, {
@@ -45,7 +62,7 @@ export default function PatientDetailPage() {
     ...(to && { to: `${to}T23:59:59.999Z` }),
   });
   const medications = usePatientMedications(patientId);
-  const patient = profile.data;
+  const patient = profile.error ? undefined : profile.data;
   return <AppShell><section className={styles.page}>
     <Link href="/patients" className={styles.back}><ArrowLeft size={17} />Back to patients</Link>
     <p className={styles.eyebrow}>Patient detail / 04</p><h2>Patient profile</h2>
@@ -58,9 +75,13 @@ export default function PatientDetailPage() {
           <div><span className={styles.label}>Date of birth</span><strong>{patient.profile.dateOfBirth ? new Date(patient.profile.dateOfBirth).toLocaleDateString() : 'Not provided'}</strong></div>
           <div><span className={styles.label}>Gender</span><strong>{patient.profile.gender || 'Not provided'}</strong></div>
           <div><span className={styles.label}>Diabetes type</span><strong>{patient.profile.diabetesType || 'Not provided'}</strong></div>
+          <div><span className={styles.label}>Treatment context</span><strong>{patient.profile.treatmentContext ? treatmentLabels[patient.profile.treatmentContext] : 'Not provided'}</strong></div>
         </div>
         <div className={styles.notice}><span className={styles.noticeMark}>i</span><p>Patient profile information is read-only and available through the active care relationship.</p></div>
-      </div><div className={styles.records}>
+      </div>
+      <DoctorCareWorkspace key={`care:${patientId}`} patientId={patientId} onViewEvent={(event) => setReview({ patientId, event })} />
+      <PatientTimeline key={patientId} patientId={patientId} focusEvent={review?.patientId === patientId ? review.event : undefined} clearFocus={() => setReview(undefined)} />
+      <div className={styles.records}>
         <div className={styles.recordsHead}><div><span className={styles.label}>Health records</span><h3>Blood glucose</h3></div><div className={styles.filters}>
           <label>From<input type="date" value={from} onChange={(event) => { setPage(1); setFrom(event.target.value); }} /></label>
           <label>To<input type="date" value={to} onChange={(event) => { setPage(1); setTo(event.target.value); }} /></label>
@@ -68,7 +89,13 @@ export default function PatientDetailPage() {
         </div></div>
         {glucose.isLoading ? <StateMessage kind="loading">Loading readings</StateMessage> :
           glucose.error ? <StateMessage kind="error">{normalizeApiError(glucose.error).message}</StateMessage> :
-          glucose.data?.items.length ? <div className={styles.readings}>{glucose.data.items.map((reading) => <div className={styles.reading} key={reading.id}><strong>{reading.value} {reading.unit}</strong><span>{reading.context.replace('_', ' ')}</span><small>{new Date(reading.measuredAt).toLocaleString()} · {reading.source}</small>{reading.notes && <p>{reading.notes}</p>}</div>)}</div> :
+          glucose.data?.items.length ? <div className={styles.readings}>{glucose.data.items.map((reading) => <div className={styles.reading} key={reading.id}>
+            <strong>{reading.value} {reading.unit}</strong>
+            <span>{reading.context.replace('_', ' ')} · {sourceLabels[reading.source]}{reading.deviceOrigin ? ` · ${reading.deviceOrigin}` : ''}</span>
+            <small>Measured {new Date(reading.measuredAt).toLocaleString()}</small>
+            {reading.receivedAt && <small>Received {new Date(reading.receivedAt).toLocaleString()}</small>}
+            {reading.notes && <p>{reading.notes}</p>}
+          </div>)}</div> :
           <StateMessage kind="empty">No readings match these filters.</StateMessage>}
         <div className={styles.pagination}><button disabled={page === 1} onClick={() => setPage((current) => current - 1)}>Previous</button><button disabled={!glucose.data || glucose.data.items.length < 10} onClick={() => setPage((current) => current + 1)}>Next</button></div>
       </div></> : <StateMessage kind="empty">Patient profile is unavailable.</StateMessage>}
@@ -83,10 +110,21 @@ export default function PatientDetailPage() {
         </> : <StateMessage kind="empty">No readings in this range.</StateMessage>}
     </section>}
     {patient && <section className={styles.analytics}>
-      <div className={styles.recordsHead}><div><span className={styles.label}>Daily health activity</span><h3>Lifestyle timeline</h3></div></div>
+      <div className={styles.recordsHead}><div><span className={styles.label}>Daily health activity</span><h3>Lifestyle records</h3></div></div>
       {lifestyle.isLoading ? <StateMessage kind="loading">Loading lifestyle activity</StateMessage> :
         lifestyle.error ? <StateMessage kind="error">{normalizeApiError(lifestyle.error).message}</StateMessage> :
-        lifestyle.data?.items.length ? <div className={styles.daily}>{lifestyle.data.items.map((entry) => <div key={entry.id}><span>{entry.type} · {new Date(entry.occurredAt).toLocaleString()}</span><strong>{entry.description || entry.activityType || entry.mealType || (entry.sleepDurationMinutes ? `${entry.sleepDurationMinutes} minutes` : '')}</strong><small>{entry.durationMinutes ? `${entry.durationMinutes} minutes` : entry.notes || ''}</small></div>)}</div> :
+        lifestyle.data?.items.length ? <div className={styles.daily}>{lifestyle.data.items.map((entry) => {
+          const details = [
+            entry.type === 'meal' && entry.carbohydrateGrams != null && `${entry.carbohydrateGrams} g estimated carbs`,
+            entry.durationMinutes != null && `${entry.durationMinutes} minutes`,
+            entry.notes,
+          ].filter(Boolean).join(' · ');
+          return <div key={entry.id}>
+            <span>{entry.type} · {new Date(entry.occurredAt).toLocaleString()}</span>
+            <strong>{entry.description || entry.activityType || entry.mealType || (entry.sleepDurationMinutes ? `${entry.sleepDurationMinutes} minutes` : '')}</strong>
+            {details && <small>{details}</small>}
+          </div>;
+        })}</div> :
         <StateMessage kind="empty">No lifestyle activity in this date range.</StateMessage>}
     </section>}
   </section>    {patient && <section className={styles.records}>

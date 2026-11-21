@@ -1,0 +1,170 @@
+.timeline {
+  background: var(--white);
+  border: 2px solid var(--ink);
+  box-shadow: 7px 7px 0 var(--ink);
+  display: grid;
+  gap: 22px;
+  min-width: 0;
+  padding: clamp(14px, 3vw, 30px);
+}
+
+.header {
+  align-items: start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 22px;
+  justify-content: space-between;
+}
+
+.header h3, .summary h4 {
+  margin: 0;
+}
+
+.header p, .summary > p {
+  color: var(--muted-ink);
+  font-size: 14px;
+  margin: 4px 0 0;
+}
+
+.filters {
+  border: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  min-width: 0;
+  padding: 0;
+}
+
+.filters label {
+  color: var(--muted-ink);
+  display: grid;
+  font-size: 12px;
+  gap: 4px;
+}
+
+.filters input, .filters select {
+  background: var(--white);
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  min-height: 42px;
+  min-width: 0;
+  padding: 6px;
+}
+
+.summary {
+  background: var(--oat);
+  padding: 16px;
+}
+
+.summary dl {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 155px), 1fr));
+  margin: 14px 0 0;
+}
+
+.summary dt, .timestamps dt, .kind {
+  color: var(--muted-ink);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.summary dd, .timestamps dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.summary dt + dd {
+  font-weight: 700;
+}
+
+.entries {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.row {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: 6px;
+  padding-top: 12px;
+}
+
+.rowHead {
+  align-items: start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  justify-content: space-between;
+}
+
+.row p {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.source, .replaySource {
+  background: var(--oat);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 12px;
+  padding: 2px 7px;
+}
+
+.replaySource {
+  background: var(--marigold);
+}
+
+.gap {
+  border-left: 3px solid var(--marigold);
+  color: var(--ink);
+  font-size: 13px;
+  padding-left: 8px;
+}
+
+.timestamps {
+  color: var(--muted-ink);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 13px;
+  gap: 4px 18px;
+  margin: 0;
+}
+
+.muted {
+  color: var(--muted-ink);
+  font-size: 13px;
+}
+
+.pagination {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.pagination button {
+  background: var(--white);
+  border: 1px solid var(--ink);
+  min-height: 42px;
+  padding: 4px 12px;
+}
+
+.pagination button:disabled {
+  cursor: default;
+  opacity: .45;
+}
+
+.srOnly {
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}

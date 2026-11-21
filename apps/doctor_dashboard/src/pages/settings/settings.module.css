@@ -1,2 +1,23 @@
-.page { display: grid; gap: 14px; }.eyebrow, .label { color: var(--tomato); font-size: 12px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }.page h2 { font-family: Georgia, serif; font-size: clamp(50px, 7vw, 90px); font-weight: 400; letter-spacing: -.065em; line-height: .92; margin: 10px 0 30px; }.grid { display: grid; gap: 22px; grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 1050px; }.card { background: var(--white); border: 2px solid var(--ink); min-height: 230px; padding: 25px; }.card h3 { font-family: Georgia, serif; font-size: 32px; font-weight: 400; margin: 34px 0 8px; }.card p { color: var(--muted-ink); }.meta { align-items: center; display: flex; gap: 12px; margin: 20px 0 13px; }.meta span { color: var(--muted-ink); font-size: 12px; }.meta strong { font-size: 13px; }.card button { margin-top: 15px; }.label { color: var(--muted-ink); }
-@media (max-width: 700px) { .grid { grid-template-columns: 1fr; } }
+.page { display: grid; gap: 24px; max-width: 1080px; }
+.heading h2 { font-family: Georgia, serif; font-size: clamp(40px, 6.5vw, 75px); font-weight: 400; letter-spacing: -.055em; line-height: 1; margin: 0; }
+.heading p, .card p { color: var(--muted-ink); }
+.heading p { margin: 11px 0 2px; }
+.grid, .profileFields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.card { background: var(--white); border: 2px solid var(--ink); border-radius: var(--radius); padding: clamp(17px, 3vw, 28px); min-width: 0; }
+.cardHeading { display: flex; align-items: center; gap: 12px; justify-content: space-between; flex-wrap: wrap; }
+.card h3 { align-items: center; display: flex; gap: 9px; font-family: Georgia, serif; font-size: clamp(23px, 3vw, 33px); font-weight: 400; letter-spacing: -.025em; line-height: 1.13; margin: 0; }
+.card h3 svg { flex: 0 0 auto; color: var(--pine); }
+.card p { margin: 10px 0 15px; }
+.card form { display: grid; gap: 13px; margin-top: 15px; }
+.card form button { justify-self: start; }
+.card label { display: grid; font-size: 14px; gap: 5px; font-weight: 700; }
+.card input:not([type='checkbox']) { min-height: 42px; min-width: 0; width: 100%; color: var(--ink); border: 1px solid var(--ink); border-radius: 6px; padding: 8px 10px; background: var(--oat); }
+.card .checkbox { display: flex; align-items: flex-start; gap: 8px; font-weight: 400; }
+.checkbox input { width: 18px; height: 18px; flex: 0 0 18px; margin-top: 2px; }
+.card .email { font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
+.card p.error { color: #952e16; margin: 0; }
+.card p.success { display: flex; align-items: center; gap: 6px; color: var(--pine); margin: 0; }
+.dangerCard { background: #fff8f7; }
+.dangerCard summary { cursor: pointer; font-weight: 700; text-decoration: underline; }
+.dangerCard h3 svg { color: #952e16; }
+@media (max-width: 720px) { .grid, .profileFields { grid-template-columns: 1fr; } }

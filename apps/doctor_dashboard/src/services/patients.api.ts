@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { AnalyticsRange, ApiResponse, ConnectionPage, GlucoseAnalytics, GlucosePage, LifestylePage, MedicationDosePage, MedicationPage, PatientProfileResponse, PatientSearchResult } from '../types/api';
+import type { AnalyticsRange, ApiResponse, CareItem, CareItemInput, ConnectionPage, DoctorCareResponse, GlucoseAnalytics, GlucosePage, LifestylePage, MedicationDosePage, MedicationPage, PatientProfileResponse, PatientSearchResult, TimelineFilters, TimelinePage } from '../types/api';
 
 export async function searchPatients(email: string) {
   const response = await api.get<ApiResponse<PatientSearchResult>>('/doctor/patients/search', { params: { email } });
@@ -28,6 +28,24 @@ export async function getPatientGlucoseAnalytics(patientId: string, range: Analy
 
 export async function getPatientLifestyle(patientId: string, filters: { page: number; limit: number; from?: string; to?: string }) {
   const response = await api.get<ApiResponse<LifestylePage>>(`/doctor/patients/${patientId}/lifestyle/timeline`, { params: filters });
+  return response.data.data;
+}
+
+export async function getPatientTimeline(patientId: string, filters: TimelineFilters) {
+  const response = await api.get<ApiResponse<TimelinePage>>(`/doctor/patients/${encodeURIComponent(patientId)}/timeline`, { params: filters });
+  return response.data.data;
+}
+
+export async function getDoctorCare(patientId: string) {
+  const response = await api.get<ApiResponse<DoctorCareResponse>>(`/doctor/patients/${encodeURIComponent(patientId)}/care`);
+  return response.data.data;
+}
+
+export async function saveCareItem(patientId: string, input: CareItemInput, itemId?: string) {
+  const collection = `/doctor/patients/${encodeURIComponent(patientId)}/care/items`;
+  const response = itemId
+    ? await api.put<ApiResponse<CareItem>>(`${collection}/${encodeURIComponent(itemId)}`, input)
+    : await api.post<ApiResponse<CareItem>>(collection, input);
   return response.data.data;
 }
 

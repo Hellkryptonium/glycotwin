@@ -5,7 +5,6 @@ export interface SafeUser {
   email: string;
   role: UserRole;
   isActive: boolean;
-  emailVerifiedAt: string | null;
   createdAt: string;
   updatedAt: string;
   doctorProfile?: DoctorProfile;
@@ -29,6 +28,7 @@ export interface PatientProfile {
   dateOfBirth: string | null;
   gender: string | null;
   diabetesType: string | null;
+  treatmentContext?: 'INSULIN' | 'NON_INSULIN' | 'LIFESTYLE' | 'UNKNOWN' | null;
 }
 
 export interface PatientProfileResponse {
@@ -36,10 +36,20 @@ export interface PatientProfileResponse {
   profile: PatientProfile;
 }
 
-export interface Tokens {
+export interface BrowserSession {
   accessToken: string;
-  refreshToken: string;
   expiresIn: number;
+  sessionExpiresAt: string;
+  user?: SafeUser;
+}
+
+export interface DoctorProfileUpdate {
+  fullName: string;
+  specialization: string | null;
+  hospitalOrClinic: string | null;
+  medicalRegistrationNumber: string | null;
+  medicalCouncil: string | null;
+  yearsOfExperience: number | null;
 }
 
 export interface PatientSearchResult {
@@ -86,14 +96,18 @@ export interface ApiErrorShape {
   status?: number;
 }
 
+export type GlucoseSource = 'MANUAL' | 'CGM' | 'HEALTH_CONNECT' | 'REPLAY';
+
 export interface GlucoseReading {
   id: string;
   patientId: string;
   value: string;
   unit: 'mg/dL' | 'mmol/L';
   measuredAt: string;
+  receivedAt?: string | null;
   context: 'FASTING' | 'BEFORE_MEAL' | 'AFTER_MEAL' | 'RANDOM';
-  source: 'MANUAL';
+  source: GlucoseSource;
+  deviceOrigin?: string | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -107,18 +121,27 @@ export interface GlucosePage {
 
 export type AnalyticsRange = '7d' | '30d' | '90d';
 
+export interface GlucoseAnalyticsReading {
+  value: string;
+  measuredAt: string;
+  unit: GlucoseReading['unit'];
+  source?: GlucoseSource;
+  receivedAt?: string | null;
+  deviceOrigin?: string | null;
+}
+
 export interface GlucoseAnalytics {
   range: AnalyticsRange;
   from: string;
   to: string;
   unit: 'mg/dL' | 'mmol/L' | null;
-  latest: { value: string; measuredAt: string; unit: 'mg/dL' | 'mmol/L' } | null;
+  latest: GlucoseAnalyticsReading | null;
   totalReadings: number;
   average: string | null;
   minimum: string | null;
   maximum: string | null;
   daily: Array<{ date: string; average: string; readingCount: number; unit: 'mg/dL' | 'mmol/L' }>;
-  readings: Array<{ value: string; measuredAt: string; unit: 'mg/dL' | 'mmol/L' }>;
+  readings: GlucoseAnalyticsReading[];
   byUnit: Array<{ unit: 'mg/dL' | 'mmol/L'; totalReadings: number; average: string; minimum: string; maximum: string }>;
 }
 
@@ -128,6 +151,7 @@ export interface LifestyleEntry {
   type: 'meal' | 'activity' | 'sleep' | 'symptom';
   occurredAt: string;
   mealType: string | null;
+  carbohydrateGrams?: number | null;
   description: string | null;
   activityType: string | null;
   durationMinutes: number | null;
@@ -139,6 +163,69 @@ export interface LifestylePage {
   items: LifestyleEntry[];
   page: number;
   limit: number;
+}
+
+export type TimelineSource = GlucoseSource | 'WATCH';
+export type TimelineKind = 'glucose' | 'meal' | 'activity' | 'sleep' | 'symptom' | 'medication' | 'steps' | 'workout' | 'heart_rate';
+
+export interface TimelineEntry {
+  id: string;
+  kind: TimelineKind;
+  occurredAt: string;
+  receivedAt: string;
+  source: TimelineSource;
+  title: string;
+  detail: string | null;
+  deviceOrigin?: string | null;
+  glucose?: { value: string; unit: string };
+}
+
+export interface TimelineFilters {
+  page: number;
+  limit: number;
+  from?: string;
+  to?: string;
+  source?: TimelineSource;
+}
+
+export interface TimelinePage {
+  items: TimelineEntry[];
+  page: number;
+  limit: number;
+  hasMore: boolean;
+}
+
+export type CareItemKind = 'NOTE' | 'GOAL' | 'FOLLOW_UP';
+
+export interface CareItemInput {
+  kind: CareItemKind;
+  title: string;
+  detail?: string | null;
+  dueDate?: string | null;
+  status?: 'OPEN' | 'DONE';
+}
+
+export interface CareItem extends CareItemInput {
+  id: string;
+  detail: string | null;
+  dueDate: string | null;
+  status: 'OPEN' | 'DONE';
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface SharedVisitBrief {
+  id: string;
+  relationshipId: string;
+  title: string;
+  notes: string | null;
+  events: TimelineEntry[];
+  createdAt: string;
+}
+
+export interface DoctorCareResponse {
+  items: CareItem[];
+  briefs: SharedVisitBrief[];
 }
 
 export interface Medication {

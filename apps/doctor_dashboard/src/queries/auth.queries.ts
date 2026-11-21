@@ -1,48 +1,68 @@
+import { useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getMe, login, logout, registerDoctor } from '../services/auth.api';
+import { notifySessionChanged, refreshBrowserSession } from '../services/api';
 import { useAuthStore } from '../stores/auth.store';
 import { queryKeys } from './keys';
+
+export function useBrowserSession() {
+  const status = useAuthStore((state) => state.status);
+  useEffect(() => {
+    if (status === 'restoring') void refreshBrowserSession().catch(() => undefined);
+  }, [status]);
+  return status;
+}
 
 export function useMe() {
   const token = useAuthStore((state) => state.accessToken);
   const setUser = useAuthStore((state) => state.setUser);
   return useQuery({
     queryKey: queryKeys.me,
-    queryFn: async () => { const user = await getMe(); setUser(user); return user; },
+    queryFn: async () => {
+      const user = await getMe();
+      if (useAuthStore.getState().status === 'authenticated') setUser(user);
+      return user;
+    },
     enabled: Boolean(token),
     retry: false,
   });
 }
 
-export function useLogin() {
-  const setTokens = useAuthStore((state) => state.setTokens);
-  const setUser = useAuthStore((state) => state.setUser);
-  const clear = useAuthStore((state) => state.clear);
+function useStartSession(start: typeof login) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (input: { email: string; password: string }) => {
-      const tokens = await login(input);
-      setTokens(tokens);
-      try {
-        const user = await getMe();
-        setUser(user);
-        return { tokens, user };
-      } catch (error) {
-        clear();
-        throw error;
-      }
+      const session = await start(input);
+      const store = useAuthStore.getState();
+      queryClient.clear();
+      store.setSession(session);
+      const user = session.user ?? await getMe();
+      store.setUser(user);
+      queryClient.setQueryData(queryKeys.me, user);
+      notifySessionChanged();
+      return user;
     },
-    onSuccess: ({ user }) => { queryClient.setQueryData(queryKeys.me, user); },
   });
 }
 
-export function useRegisterDoctor() { return useMutation({ mutationFn: registerDoctor }); }
-export function useLogout() {
-  const refreshToken = useAuthStore((state) => state.refreshToken);
-  const clear = useAuthStore((state) => state.clear);
+export function useLogin() {
+  return useStartSession(login);
+}
+
+export function useRegisterDoctor() {
+  return useStartSession(registerDoctor);
+}
+
+export function useEndSession() {
   const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async () => refreshToken ? logout(refreshToken) : undefined,
-    onSettled: () => { clear(); queryClient.clear(); },
-  });
+  return () => {
+    useAuthStore.getState().clear();
+    queryClient.clear();
+    notifySessionChanged();
+  };
+}
+
+export function useLogout() {
+  const endSession = useEndSession();
+  return useMutation({ mutationFn: logout, onSuccess: endSession });
 }

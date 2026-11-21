@@ -1,41 +1,39 @@
 # Doctor Dashboard
 
-The doctor dashboard is the browser application for doctor authentication, patient lookup, invitations, and connected-patient visibility.
+The clinician workspace supports secure account access, patient invitations, connected health records, care notes, shared goals, and visit review.
 
-## Architecture
+## Local configuration
 
-This is a Next.js pages-router application written in TypeScript. Axios provides the API client, TanStack Query manages server state, and Zustand stores the access/refresh session on the client. The dashboard calls the Express API and does not access PostgreSQL directly.
-
-## Configuration
-
-Create `.env.local` from `.env.example`:
+Copy `.env.example` to `.env.local` when you need to override the default API target.
 
 ```text
-NEXT_PUBLIC_API_BASE_URL=http://localhost:5000/api/v1
+API_PROXY_TARGET=http://127.0.0.1:5050/api/v1
 ```
 
-Only the API base URL belongs in this client-side environment file. Do not put secrets in `NEXT_PUBLIC_*` variables.
+The browser sends API requests to the dashboard’s same-origin `/backend` route. Next.js forwards them to Express. Use the exact dashboard address configured as `FRONTEND_ORIGIN` in the API, typically `http://localhost:3000`. The legacy `NEXT_PUBLIC_API_BASE_URL` variable is also accepted as the proxy target. Set `NEXT_PUBLIC_PATIENT_APK_URL` when a reviewed Android release is ready to link on the landing page.
 
-## Development and production
+The dashboard retains a short-lived access token in memory. The backend sets a browser-only `HttpOnly` refresh cookie for the seven-day account session. Temporary connectivity errors offer a retry from protected pages. Apply the current API migrations before testing account and care features.
+
+## Vercel deployment
+
+Import the repository into Vercel, choose the Next.js preset, and set the Root Directory to `apps/doctor_dashboard`. Keep the preset's build and output settings. In Production, set `API_PROXY_TARGET=https://api.glycotwin.me/api/v1`. Configure a Preview value targeting the intended staging API if using preview deployments. Redeploy after changing the proxy target because Next.js generates the rewrite during the build.
+
+On Render, set `FRONTEND_ORIGIN` to the exact HTTPS origin clinicians open in their browser. Neon credentials, JWT secrets, and doctor signup settings belong on Render. After deploying, visit `/backend/health` on the dashboard domain, sign in with a synthetic clinician account, then reload a protected page to confirm the refresh cookie works through the proxy.
+
+## Workflows
+
+- `/` offers separate entry points for clinicians and patients.
+- `/auth/register` starts a session and opens the clinician profile form. `/auth/login` can restore an existing session or accept credentials.
+- `/settings` supports clinician profile edits, displays the sign-in email, and lets clinicians change their password, sign out, or confirm account deletion.
+- `/dashboard` shows an authenticated overview. `/patients` supports lookup and invitations for verified clinicians.
+- `/patients/[patientId]` shows the patient profile, health timeline, trends, medication history, and care workspace for an active relationship. Patient-shared briefs link to individual timeline records.
+
+## Commands
 
 ```powershell
 npm install
-npm run dev
 npm run typecheck
 npm run build
+npm run dev
 npm run start
 ```
-
-## Implemented routes and features
-
-- `/auth/register` — doctor registration.
-- `/auth/login` — doctor/patient login routing.
-- `/dashboard` — authenticated overview.
-- `/patients` — exact-email patient search, invitation creation, and connected patients.
-- `/patients/[patientId]` — read-only profile and paginated blood-glucose history for an actively connected patient.
-- `/settings` — account information and logout.
-
-Doctor invitation creation, connected-patient listing, profile reads, and glucose history require the API's verified-doctor authorization policy. The dashboard displays incomplete fields explicitly, supports date/context filters, handles API errors, and does not provide profile or glucose editing.
-The patient detail page includes a read-only Health Trends section with 7-day, 30-day, and 90-day descriptive glucose charts and daily summaries. It uses the authenticated doctor analytics endpoint and handles loading, empty, and error states.
-It also includes a read-only Daily Health Activity timeline for connected patients, filtered by the existing From/To date controls.
-The patient detail page also includes a read-only Medication tracking section for active relationships, including active/discontinued medication details and descriptive recorded-dose counts.

@@ -1,14 +1,21 @@
-import { api } from './api';
-import type { ApiResponse, SafeUser, Tokens } from '../types/api';
+import { api, browserAuth, withSessionLock } from './api';
+import type { ApiResponse, BrowserSession, DoctorProfile, DoctorProfileUpdate, SafeUser } from '../types/api';
 
-export async function login(input: { email: string; password: string }) {
-  const response = await api.post<ApiResponse<Tokens>>('/auth/login', input);
-  return response.data.data;
+type Credentials = { email: string; password: string };
+
+async function startSession(path: string, input: Credentials) {
+  return withSessionLock(async () => {
+    const response = await browserAuth.post<ApiResponse<BrowserSession>>(path, input);
+    return response.data.data;
+  });
 }
 
-export async function registerDoctor(input: { email: string; password: string }) {
-  const response = await api.post<ApiResponse<SafeUser>>('/auth/register/doctor', input);
-  return response.data.data;
+export function login(input: Credentials) {
+  return startSession('/auth/login', input);
+}
+
+export function registerDoctor(input: Credentials) {
+  return startSession('/auth/register/doctor', input);
 }
 
 export async function getMe() {
@@ -16,11 +23,19 @@ export async function getMe() {
   return response.data.data;
 }
 
-export async function logout(refreshToken: string) {
-  await api.post('/auth/logout', { refreshToken });
+export async function logout() {
+  await withSessionLock(async () => { await browserAuth.post('/auth/logout', {}); });
 }
 
-export async function refresh(refreshToken: string) {
-  const response = await api.post<ApiResponse<Tokens>>('/auth/refresh', { refreshToken });
+export async function updateDoctorProfile(input: DoctorProfileUpdate) {
+  const response = await api.put<ApiResponse<{ email: string; profile: DoctorProfile }>>('/doctor/profile', input);
   return response.data.data;
+}
+
+export async function changePassword(input: { currentPassword: string; newPassword: string }) {
+  await api.put('/auth/account/password', input);
+}
+
+export async function deleteAccount(currentPassword: string) {
+  await api.delete('/auth/account', { data: { currentPassword } });
 }

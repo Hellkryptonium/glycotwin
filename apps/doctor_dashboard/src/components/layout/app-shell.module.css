@@ -10,6 +10,8 @@
 .active { background: var(--cobalt); color: var(--white); }
 .sidebarNote { border-top: 1px solid #44413a; color: #aaa497; font-family: Georgia, serif; font-size: 16px; line-height: 1.35; margin-top: auto; padding: 18px 10px 24px; }
 .noteBar { background: var(--tomato); display: block; height: 5px; margin-bottom: 14px; width: 34px; }
+.sidebarBottom { margin-top: auto; }
+.logoutError { color: var(--blush); font-size: 13px; margin: 0 12px 8px; }
 .logout { align-items: center; background: transparent; border: 0; color: #d7d2c7; display: flex; gap: 10px; padding: 10px 12px; text-align: left; }
 .logout:hover { color: var(--white); }
 .main { margin-left: 252px; min-width: 0; width: calc(100% - 252px); }

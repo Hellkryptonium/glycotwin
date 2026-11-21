@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getConnectedPatients, getPatientGlucoseAnalytics, getPatientGlucoseReadings, getPatientLifestyle, getPatientMedicationDoses, getPatientMedications, getPatientProfile, searchPatients } from '../services/patients.api';
-import type { AnalyticsRange } from '../types/api';
+import { getConnectedPatients, getDoctorCare, getPatientGlucoseAnalytics, getPatientGlucoseReadings, getPatientLifestyle, getPatientMedicationDoses, getPatientMedications, getPatientProfile, getPatientTimeline, saveCareItem, searchPatients } from '../services/patients.api';
+import type { AnalyticsRange, CareItemInput, TimelineFilters } from '../types/api';
 import { queryKeys } from './keys';
 import { useAuthStore } from '../stores/auth.store';
 
@@ -24,6 +24,8 @@ export function usePatientProfile(patientId: string) {
     queryFn: () => getPatientProfile(patientId),
     enabled: Boolean(patientId && accessToken && user?.role === 'doctor'),
     retry: false,
+    refetchOnWindowFocus: true,
+    refetchInterval: 20_000,
   });
 }
 
@@ -57,6 +59,38 @@ export function usePatientLifestyle(patientId: string, filters: { page: number; 
     queryFn: () => getPatientLifestyle(patientId, filters),
     enabled: Boolean(patientId && accessToken && user?.role === 'doctor'),
     retry: false,
+  });
+}
+
+export function usePatientTimeline(patientId: string, filters: TimelineFilters, dateRangeIsValid: boolean) {
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const user = useAuthStore((state) => state.user);
+  return useQuery({
+    queryKey: queryKeys.patientTimeline(patientId, user?.id, filters),
+    queryFn: () => getPatientTimeline(patientId, filters),
+    enabled: Boolean(dateRangeIsValid && patientId && accessToken && user?.role === 'doctor'),
+    retry: false,
+  });
+}
+
+export function useDoctorCare(patientId: string) {
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const user = useAuthStore((state) => state.user);
+  return useQuery({
+    queryKey: queryKeys.doctorCare(patientId, user?.id),
+    queryFn: () => getDoctorCare(patientId),
+    enabled: Boolean(patientId && accessToken && user?.role === 'doctor'),
+    retry: false,
+    refetchOnWindowFocus: true,
+  });
+}
+
+export function useSaveCareItem(patientId: string) {
+  const userId = useAuthStore((state) => state.user?.id);
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ input, itemId }: { input: CareItemInput; itemId?: string }) => saveCareItem(patientId, input, itemId),
+    onSettled: () => client.invalidateQueries({ queryKey: queryKeys.doctorCare(patientId, userId) }),
   });
 }
 
