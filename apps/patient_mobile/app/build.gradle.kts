@@ -25,8 +25,8 @@ android {
         release {
             manifestPlaceholders["allowCleartext"] = false
             optimization {
-                enable = true
-                packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**")
+                // The scoped optimizer in beta 1 produced an IllegalAccessError during AndroidX startup.
+                enable = false
             }
         }
         debug {
