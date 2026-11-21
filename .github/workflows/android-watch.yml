@@ -1,0 +1,18 @@
+name: Android watch beta
+on:
+  workflow_dispatch:
+    inputs:
+      beta_number:
+        description: 'Next watch beta version code (positive integer)'
+        required: true
+        type: string
+
+jobs:
+  release:
+    permissions:
+      contents: write
+    uses: ./.github/workflows/android-release.yml
+    with:
+      device: watch
+      project: wearable
+      beta_number: ${{ inputs.beta_number }}
