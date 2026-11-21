@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.GlycoTwin.Starting" parent="Theme.GlycoTwin">
+        <item name="android:windowBackground">@drawable/glycotwin_start_window</item>
+    </style>
+</resources>

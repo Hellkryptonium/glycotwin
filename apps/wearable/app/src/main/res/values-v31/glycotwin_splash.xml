@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.GlycoTwinWatch.Starting" parent="Theme.GlycoTwinWatch">
+        <item name="android:windowSplashScreenBackground">@color/glycotwin_ink</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/glycotwin_badge</item>
+        <item name="android:statusBarColor">@color/glycotwin_ink</item>
+    </style>
+</resources>

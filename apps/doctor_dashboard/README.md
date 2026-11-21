@@ -10,7 +10,7 @@ Copy `.env.example` to `.env.local` when you need to override the default API ta
 API_PROXY_TARGET=http://127.0.0.1:5050/api/v1
 ```
 
-The browser sends API requests to the dashboard’s same-origin `/backend` route. Next.js forwards them to Express. Use the exact dashboard address configured as `FRONTEND_ORIGIN` in the API, typically `http://localhost:3000`. The legacy `NEXT_PUBLIC_API_BASE_URL` variable is also accepted as the proxy target. Set `NEXT_PUBLIC_PATIENT_APK_URL` when a reviewed Android release is ready to link on the landing page.
+The browser sends API requests to the dashboard’s same-origin `/backend` route. Next.js forwards them to Express. Use the exact dashboard address configured as `FRONTEND_ORIGIN` in the API, typically `http://localhost:3000`. The legacy `NEXT_PUBLIC_API_BASE_URL` variable is also accepted as the proxy target. The public /download page links to signed APKs from the latest GitHub beta release.
 
 The dashboard retains a short-lived access token in memory. The backend sets a browser-only `HttpOnly` refresh cookie for the seven-day account session. Temporary connectivity errors offer a retry from protected pages. Apply the current API migrations before testing account and care features.
 

@@ -1,3 +1,55 @@
 <resources>
     <string name="app_name">GlycoTwin Watch</string>
+    <string name="watch_name">GlycoTwin</string>
+    <string name="latest_glucose">Latest measured glucose</string>
+    <string name="glucose_empty">No reading shared</string>
+    <string name="glucose_waiting">Waiting for phone</string>
+    <string name="glucose_details">%1$s · %2$s</string>
+    <string name="glucose_just_now">Just now</string>
+    <string name="glucose_older">Older reading</string>
+    <string name="glucose_clock_ahead">Check phone and watch clocks</string>
+    <string name="source_manual">Manual</string>
+    <string name="source_cgm">CGM</string>
+    <string name="source_health_connect">Health Connect</string>
+    <string name="source_replay">Demo replay</string>
+    <string name="phone_checking">Checking connection…</string>
+    <string name="phone_disconnected">Phone disconnected</string>
+    <string name="phone_unavailable">Watch sync unavailable</string>
+    <string name="phone_connected">Phone connected</string>
+    <string name="activity_heading">Activity</string>
+    <string name="activity_checking">Checking activity sharing…</string>
+    <string name="activity_connect_phone">Open GlycoTwin on your phone to connect.</string>
+    <string name="activity_sync_unavailable">Reopen GlycoTwin on your phone to retry activity sync.</string>
+    <string name="activity_enable_phone">Turn on Sync watch activity on your phone.</string>
+    <string name="activity_ready">Keep this screen open during your workout. Steps and pulse are optional.</string>
+    <string name="sensors_enable">Enable sensors</string>
+    <string name="workout_start">Start workout</string>
+    <string name="workout_finish">Finish workout</string>
+    <string name="workout_kind">Workout type</string>
+    <string name="walk_option">Walk</string>
+    <string name="workout_option">Other workout</string>
+    <string name="workout_recording">Workout</string>
+    <string name="workout_phone_offline">Upload will wait for the phone.</string>
+    <string name="workout_too_short">Workout was too short to save.</string>
+    <string name="workout_time">%1$d:%2$02d</string>
+    <string name="workout_current">%1$s · %2$s</string>
+    <plurals name="workout_steps">
+        <item quantity="one">%1$d step</item>
+        <item quantity="other">%1$d steps</item>
+    </plurals>
+    <string name="workout_heart_rate">%1$d bpm</string>
+    <string name="workout_metric_line">%1$s\n%2$s</string>
+    <string name="activity_replay">Send demo activity</string>
+    <string name="activity_saving">Saving on watch…</string>
+    <string name="activity_queued">Saved on watch. Waiting for upload.</string>
+    <string name="activity_retrying">Watch save will retry.</string>
+    <string name="activity_acknowledged">Activity uploaded to GlycoTwin.</string>
+    <string name="activity_discarded">Sharing changed. Activity upload stopped.</string>
+    <string name="activity_no_permission">Workout sensors are optional. You can enable them in watch settings.</string>
+    <string name="replay_title">Send demo activity?</string>
+    <string name="replay_body">Sends synthetic steps, a workout and a heart rate sample to a local demo account.</string>
+    <string name="replay_send">Send demo</string>
+    <string-array name="android_wear_capabilities" translatable="false">
+        <item>glycotwin_watch</item>
+    </string-array>
 </resources>

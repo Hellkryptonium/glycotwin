@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import styles from './home.module.css';
 
-const patientApk = process.env.NEXT_PUBLIC_PATIENT_APK_URL;
+
 
 export default function HomePage() {
   const router = useRouter();
@@ -45,7 +45,7 @@ export default function HomePage() {
         <Smartphone size={27} aria-hidden="true" />
         <h2 id="patient-title">For patients</h2>
         <p>Use the Android app to log readings and day-to-day details, see measurements from supported devices, and share records with the clinicians you connect.</p>
-        {patientApk ? <a className={styles.primary} href={patientApk}><ArrowDownToLine size={17} aria-hidden="true" />Download Android app</a> : <p className={styles.installNote}>Invited testers can get the Android build from the project team.</p>}
+        <Link className={styles.primary} href="/download"><ArrowDownToLine size={17} aria-hidden="true" />Download Android app</Link>
       </section>
       <section id="doctors" className={`${styles.roleCard} ${styles.doctorCard}`} aria-labelledby="doctor-title">
         <HeartHandshake size={27} aria-hidden="true" />

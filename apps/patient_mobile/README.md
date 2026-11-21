@@ -5,64 +5,12 @@ Native Android patient application for account access and consent-based doctor c
 ## Stack and setup
 
 - Kotlin and Jetpack Compose with Material 3.
-- Package: `com.glycotwin.patient`.
+- Android application ID: `me.glycotwin.patient`.
 - Minimum Android SDK: 26.
 - Android Studio with an Android Emulator.
 - Retrofit/Gson for HTTP, Coroutines/StateFlow for state, Android Keystore for session tokens.
 
-Open `apps/patient_mobile`In the GlycoTwin Android application, add a **Delete Account** option to the existing Profile screen (`ProfileScreen.kt`).
-
-### 1. UI design
-- Add a "Delete account" button directly below the existing "Log out" button.
-- Use the same width, rounded corners, and overall dimensions as the Log out button.
-- Use a white or transparent background matching the existing screen design.
-- Use a subtle red border and red text.
-- Add a trash/delete icon before the text.
-- Do not change the existing Account card, Your Information card, Edit Profile button, or Log out button.
-- Preserve the existing GlycoTwin typography, spacing, background, and bottom navigation.
-
-### 2. Delete confirmation dialog
-When the user taps Delete account, display a confirmation dialog:
-
-**Title:** Delete your account?
-
-**Message:** Are you sure you want to permanently delete your GlycoTwin account? This action cannot be undone. Your personal information, health records, glucose readings, medications, and lifestyle entries associated with your account will also be deleted.
-
-Provide two buttons:
-- Cancel – closes the dialog without making changes.
-- Delete permanently – proceeds with account deletion.
-
-### 3. Backend functionality
-Implement actual account deletion, not just UI removal.
-
-- Authenticate or re-authenticate the user before deletion when required.
-- Delete the user's account from the authentication provider.
-- Delete all associated user data from the backend database, including health records, glucose readings, medications, lifestyle entries, and profile information.
-- Ensure deletion is scoped strictly to the currently authenticated user.
-- Handle database cleanup and authentication deletion safely.
-- Prevent partial deletion from leaving orphaned personal health data.
-- Navigate to the login/welcome screen after successful deletion.
-- Display a clear error message if deletion fails.
-
-### 4. Important requirements
-- First inspect the existing `ProfileScreen.kt`, `PatientViewModel.kt`, authentication implementation, API services, and backend database structure.
-- Reuse the existing architecture, components, API patterns, and navigation.
-- Do not introduce duplicate functions or unnecessary dependencies.
-- Do not break login, registration, profile editing, logout, or existing navigation.
-- Do not hardcode user IDs.
-- Do not claim an account has been deleted unless the backend confirms success.
-
-### 5. Final verification
-Test the following:
-1. Delete Account button appears below Log out.
-2. Cancel keeps the account intact.
-3. Confirmation triggers actual backend deletion.
-4. Associated health and personal data are deleted.
-5. Successful deletion redirects to the login screen.
-6. Failed deletion displays an appropriate error.
-7. Other users' accounts and data remain unaffected.
-
-**Important:** Implement the complete feature end-to-end while preserving the existing GlycoTwin UI and functionality. Do not redesign the Profile screen. in Android Studio and run the `app` configuration after starting the API. PowerShell commands:
+Open `apps/patient_mobile` in Android Studio and select the `app` configuration after starting the API. PowerShell commands:
 
 ```powershell
 .\gradlew.bat :app:assembleDebug
@@ -75,23 +23,30 @@ The API URL is a Gradle build property:
 .\gradlew.bat :app:assembleDebug "-PAPI_BASE_URL=http://10.0.2.2:5050/api/v1/"
 ```
 
-`10.0.2.2` is the Android Emulator alias for the Windows host. If the Windows emulator networking layer does not route that address, use the host's reachable LAN address instead. Debug builds allow cleartext HTTP; production builds do not.
+`10.0.2.2` is the Android Emulator alias for the Windows host. If the emulator cannot reach the API through that alias, forward the port over ADB and build for emulator loopback.
+
+```powershell
+adb -s <emulator-serial> reverse tcp:5050 tcp:5050
+.\gradlew.bat :app:assembleDebug "-PAPI_BASE_URL=http://127.0.0.1:5050/api/v1/"
+```
+
+Debug builds allow cleartext HTTP; production builds require HTTPS.
 
 ## Integrated workflow
 
-- Patient registration and login.
-- Session restore, refresh, and logout.
-- Profile completion after login, profile retrieval, and patient-owned profile updates.
-- Editable full name, date of birth, gender, and diabetes type; email is read-only.
-- Health Records tab with manual glucose entry, native date/time pickers, history, editing, deletion confirmation, and refresh.
-- `GET /patient/invitations`.
-- Accept/decline through `POST /patient/invitations/:id/respond`.
-- Care Team invitation loading, refresh, action states, and errors.
-- Dashboard pending-invitation count and accepted-invitation connection status.
+- Signup starts a session and opens profile setup. Sign-in and signup sessions restore from encrypted storage for up to seven days.
+- Profile has personal and health details, connected devices, care access, and **Account & security**. Confirm your current password to set a new password or delete your account.
+- **Today → View health history** shows glucose, taken medication doses, lifestyle records, and watch activity with their source and time. Manual glucose entry, editing, and deletion are in Health.
+- **Care** lists active doctor access, pending invitations, goals, follow-ups, and shared briefs. Accept an invitation, then choose **Prepare a visit brief** to share selected records. You can stop sharing a brief or end a doctor’s access from the same screen.
 
-## Limitations
+## Data connections
 
-The API currently has no patient-side relationship-list endpoint. The app therefore does not invent one; connected-doctor information is shown only when supported by returned accepted-invitation data. Gender and diabetes type remain validated text fields because the existing database has no enum values. Health metrics, device data, recommendations, and ML predictions are intentionally not implemented.
+- Open **Data connections** from Today, Profile, or Trends. Pair the devices in Wear OS and install the GlycoTwin watch and phone builds with the same application ID and signing key. Enable **Share my latest glucose** and **Sync watch activity** independently. The phone retries watch uploads while the app is active, and a successful server response clears the corresponding watch queue item.
+- Use **Find glucose sources** to grant Health Connect blood glucose permission. Select a source to import available readings from the last seven days. Records retain the source app and their measurement time. The API tracks when it receives them.
+- The **Glucose replay** action is available to debug builds on an `@example.test` patient account. The API also requires local PostgreSQL and development demo mode. Replay creates labeled synthetic readings so the phone, watch, and clinician views can be exercised on test data.
+- Set diabetes type and treatment context in Profile. The Medication screen records the scheduled time separately from when the user took the dose and the optional actual amount.
+
+Synced workouts, steps, and pulse records also appear under **Lifestyle → Activity → From your watch**.
 
 
 
@@ -137,3 +92,13 @@ The API currently has no patient-side relationship-list endpoint. The app theref
 
 
 
+
+## Signed tester releases
+
+The phone and watch use Android application ID `me.glycotwin.patient` and must share the same release certificate. The phone release connects to `https://api.glycotwin.me/api/v1/`. Register this application ID when adding Firebase. Older installs with the previous ID are separate apps.
+
+The Android beta workflow runs manually. Create the GitHub environment `android-beta` and allow deployments from the `main` branch. The publish job uses GitHub's built-in token with repository contents write permission.
+
+On the signing Windows account, sign in to the GitHub CLI with repository administrator access. Run `apps/patient_mobile/configure-github-signing.ps1` from PowerShell to populate the environment's two signing secrets and the expected certificate fingerprint and alias. The helper reads the keystore and Windows-encrypted password from `~/.glycotwin-signing`. Keep a separate secure backup of the keystore and a recoverable copy of the password in your password manager; the encrypted XML alone cannot restore the password on another computer.
+
+Push the complete Android sources and workflow to the default branch. In GitHub, open Actions > Android beta > Run workflow, select main, and enter the next unused beta number. The workflow creates the release tag on the commit it built. This number becomes the Android version code on both devices. The workflow signs and verifies both APKs before publishing the numbered release as the repository's latest release with checksums. Reserve GitHub's latest release for the Android download page. Vercel's public `/download` page reads GitHub release metadata and links to those exact assets. No dashboard rebuild is needed for subsequent APK releases.

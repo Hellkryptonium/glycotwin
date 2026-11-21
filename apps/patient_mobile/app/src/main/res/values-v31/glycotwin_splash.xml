@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.GlycoTwin.Starting" parent="Theme.GlycoTwin">
+        <item name="android:windowBackground">@color/glycotwin_oat</item>
+        <item name="android:windowSplashScreenBackground">@color/glycotwin_oat</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/glycotwin_splash_badge</item>
+    </style>
+</resources>

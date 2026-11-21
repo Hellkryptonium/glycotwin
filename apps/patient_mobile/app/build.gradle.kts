@@ -4,20 +4,18 @@ plugins {
 }
 
 android {
-    namespace = "com.glycotwin.patient"
+    namespace = "me.glycotwin.patient"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
-        applicationId = "com.glycotwin.patient"
+        applicationId = "me.glycotwin.patient"
         minSdk = 26
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
-        val apiBaseUrl = (project.findProperty("API_BASE_URL") as String?)
-            ?: "http://10.0.2.2:5050/api/v1/"
-        buildConfigField("String", "API_BASE_URL", "\"$apiBaseUrl\"")
+        versionCode = providers.gradleProperty("releaseCode").orElse("1").get().toInt()
+        versionName = providers.gradleProperty("releaseName").orElse("1.0").get()
+        buildConfigField("String", "API_BASE_URL", "\"https://api.glycotwin.me/api/v1/\"")
         manifestPlaceholders["allowCleartext"] = false
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -32,6 +30,8 @@ android {
             }
         }
         debug {
+            val debugApiUrl = project.findProperty("API_BASE_URL") as String? ?: "http://127.0.0.1:5050/api/v1/"
+            buildConfigField("String", "API_BASE_URL", "\"$debugApiUrl\"")
             manifestPlaceholders["allowCleartext"] = true
         }
     }
@@ -61,6 +61,8 @@ dependencies {
     implementation(libs.gson)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation("com.google.android.gms:play-services-wearable:19.0.0")
+    implementation("androidx.health.connect:connect-client:1.1.0")
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
