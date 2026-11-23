@@ -8,6 +8,7 @@ Copy `.env.example` to `.env.local` when you need to override the default API ta
 
 ```text
 API_PROXY_TARGET=http://127.0.0.1:5050/api/v1
+NEXT_PUBLIC_LIVE_WS_URL=ws://127.0.0.1:5050
 ```
 
 The browser sends API requests to the dashboard’s same-origin `/backend` route. Next.js forwards them to Express. Use the exact dashboard address configured as `FRONTEND_ORIGIN` in the API, typically `http://localhost:3000`. The legacy `NEXT_PUBLIC_API_BASE_URL` variable is also accepted as the proxy target. The public /download page links to signed APKs from the latest GitHub beta release.

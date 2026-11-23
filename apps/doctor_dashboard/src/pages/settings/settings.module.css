@@ -17,6 +17,7 @@
 .card .email { font-weight: 700; color: var(--ink); overflow-wrap: anywhere; }
 .card p.error { color: #952e16; margin: 0; }
 .card p.success { display: flex; align-items: center; gap: 6px; color: var(--pine); margin: 0; }
+.photoUpload { align-items: center; display: flex !important; gap: 10px !important; margin: 12px 0; width: max-content; }.photoUpload img, .photoUpload > span { align-items: center; background: var(--cobalt); border: 1px solid var(--ink); border-radius: 50%; color: var(--white); display: flex; height: 48px; justify-content: center; object-fit: cover; width: 48px; }.photoUpload input { max-width: 210px; padding: 5px !important; }.photoUpload small { color: var(--muted-ink); font-weight: 400; }
 .dangerCard { background: #fff8f7; }
 .dangerCard summary { cursor: pointer; font-weight: 700; text-decoration: underline; }
 .dangerCard h3 svg { color: #952e16; }

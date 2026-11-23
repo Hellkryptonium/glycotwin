@@ -1,13 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Check, LockKeyhole, LogOut, Mail, Trash2, UserRound } from 'lucide-react';
 import { useRouter } from 'next/router';
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
 import { AppShell } from '../../components/layout/app-shell';
 import { Button } from '../../components/ui/button';
 import { StatusPill } from '../../components/ui/status-pill';
 import { useEndSession, useLogout, useMe } from '../../queries/auth.queries';
 import { queryKeys } from '../../queries/keys';
 import { changePassword, deleteAccount, updateDoctorProfile } from '../../services/auth.api';
+import { getMediaUrl, uploadProfilePhoto } from '../../services/media.api';
 import { normalizeApiError } from '../../services/api';
 import { useAuthStore } from '../../stores/auth.store';
 import type { DoctorProfile, SafeUser } from '../../types/api';
@@ -62,6 +63,9 @@ function ProfileEditor({ profile }: { profile?: DoctorProfile }) {
     medicalCouncil: profile?.medicalCouncil ?? '',
     yearsOfExperience: profile?.yearsOfExperience == null ? '' : String(profile.yearsOfExperience),
   });
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const photo = useMutation({ mutationFn: uploadProfilePhoto, onSuccess: ({ previewUrl }) => setPhotoUrl(previewUrl) });
+  useEffect(() => { if (profile?.profilePhotoAssetId) void getMediaUrl(profile.profilePhotoAssetId).then(setPhotoUrl).catch(() => setPhotoUrl(null)); }, [profile?.profilePhotoAssetId]);
   const update = useMutation({
     mutationFn: updateDoctorProfile,
     onSuccess: ({ email, profile: doctorProfile }) => {
@@ -103,6 +107,12 @@ function ProfileEditor({ profile }: { profile?: DoctorProfile }) {
       <StatusPill tone={status === 'verified' ? 'success' : status === 'rejected' ? 'danger' : 'warning'}>{status === 'pending' ? 'Verification pending' : status === 'verified' ? 'Verified' : 'Verification rejected'}</StatusPill>
     </div>
     <p>{verificationCopy[status]}</p>
+    <label className={styles.photoUpload}>
+      {photoUrl ? <img src={photoUrl} alt="Your profile" /> : <span>{(fields.fullName || 'D').slice(0, 1).toUpperCase()}</span>}
+      <input type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => { const file = event.target.files?.[0]; if (file) photo.mutate(file); }} />
+      <small>{photo.isPending ? 'Uploading photo…' : 'Choose profile photo'}</small>
+    </label>
+    {photo.error && <FormError error={photo.error} />}
     <form onSubmit={submit}>
       <div className={styles.profileFields}>
         {textFields.map(({ field, label, max, ...options }) => <label key={field}>{label}<input value={fields[field]} onChange={(event) => { setFields({ ...fields, [field]: event.target.value }); update.reset(); }} maxLength={max} required={'required' in options && options.required} autoComplete={'complete' in options ? options.complete : undefined} /></label>)}

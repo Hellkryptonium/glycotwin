@@ -11,3 +11,5 @@ export * from './relationships.js';
 export * from './users.js';
 export * from './account-security.js';
 export * from './care.js';
+export * from './ai.js';
+export * from './media-assets.js';

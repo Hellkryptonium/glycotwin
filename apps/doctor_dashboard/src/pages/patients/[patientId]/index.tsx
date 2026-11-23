@@ -1,4 +1,4 @@
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { AppShell } from '../../../components/layout/app-shell';
@@ -79,6 +79,7 @@ export default function PatientDetailPage() {
         </div>
         <div className={styles.notice}><span className={styles.noticeMark}>i</span><p>Patient profile information is read-only and available through the active care relationship.</p></div>
       </div>
+      <Link href={`/ai?patientId=${encodeURIComponent(patientId)}`} className={styles.back}><Sparkles size={17} />Ask GlycoTwin AI about this patient</Link>
       <DoctorCareWorkspace key={`care:${patientId}`} patientId={patientId} onViewEvent={(event) => setReview({ patientId, event })} />
       <PatientTimeline key={patientId} patientId={patientId} focusEvent={review?.patientId === patientId ? review.event : undefined} clearFocus={() => setReview(undefined)} />
       <div className={styles.records}>

@@ -25,7 +25,18 @@ import me.glycotwin.patient.data.remote.PatientCareDto
 import me.glycotwin.patient.data.remote.PatientTimelinePage
 import me.glycotwin.patient.data.remote.VisitBriefDto
 import me.glycotwin.patient.data.remote.VisitBriefInput
+import me.glycotwin.patient.data.remote.PatientAiConversationDto
+import me.glycotwin.patient.data.remote.PatientAiConversationDetailDto
+import me.glycotwin.patient.data.remote.PatientAiMessageInput
+import me.glycotwin.patient.data.remote.PatientAiSendResultDto
 import retrofit2.Response
+import me.glycotwin.patient.data.remote.MediaUploadInput
+import me.glycotwin.patient.data.remote.MediaUploadDto
+import me.glycotwin.patient.data.remote.MediaAssetDto
+import java.net.HttpURLConnection
+import java.net.URL
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class PatientRepository(
     private val api: GlycoTwinApi,
@@ -135,6 +146,38 @@ class PatientRepository(
 
     suspend fun deleteVisitBrief(id: String): Result<Unit> = authResult {
         authenticated { api.deleteVisitBrief(id, it) }
+    }
+
+    suspend fun uploadProfilePhoto(bytes: ByteArray, contentType: String = "image/jpeg"): Result<String> = authResult {
+        if (bytes.size > 5 * 1024 * 1024) throw ApiException("Choose a profile photo smaller than 5 MB.")
+        val upload: MediaUploadDto = authenticated { api.createMediaUpload(MediaUploadInput("PROFILE_PHOTO", contentType, bytes.size, "profile-photo.jpg"), it) }.body().requireData()
+        withContext(Dispatchers.IO) {
+            val connection = URL(upload.uploadUrl).openConnection() as HttpURLConnection
+            connection.requestMethod = "PUT"
+            connection.setRequestProperty("Content-Type", contentType)
+            connection.doOutput = true
+            connection.outputStream.use { it.write(bytes) }
+            if (connection.responseCode !in 200..299) throw ApiException("Photo upload failed.")
+        }
+        authenticated { api.completeMediaUpload(upload.asset.id, it) }.body().requireData()
+        authenticated { api.attachProfilePhoto(upload.asset.id, it) }.body().requireData()
+        upload.asset.id
+    }
+
+    suspend fun aiConversations(): Result<List<PatientAiConversationDto>> = authResult {
+        authenticated { api.aiConversations(it) }.body().requireData()
+    }
+
+    suspend fun createAiConversation(): Result<PatientAiConversationDto> = authResult {
+        authenticated { api.createAiConversation(it) }.body().requireData()
+    }
+
+    suspend fun aiConversation(id: String): Result<PatientAiConversationDetailDto> = authResult {
+        authenticated { api.aiConversation(id, it) }.body().requireData()
+    }
+
+    suspend fun sendAiMessage(id: String, input: PatientAiMessageInput): Result<PatientAiSendResultDto> = authResult {
+        authenticated { api.sendAiMessage(id, input, it) }.body().requireData()
     }
 
     private suspend fun <T> authenticated(call: suspend (String) -> Response<T>): Response<T> =

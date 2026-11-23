@@ -29,6 +29,9 @@ import androidx.compose.material.icons.filled.DirectionsWalk
 import androidx.compose.material.icons.filled.Bloodtype
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Medication
+import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -67,18 +70,20 @@ import me.glycotwin.patient.ui.viewmodel.AuthViewModel
 import me.glycotwin.patient.ui.viewmodel.InvitationAction
 import me.glycotwin.patient.ui.viewmodel.PatientState
 import me.glycotwin.patient.ui.viewmodel.PatientViewModel
+import me.glycotwin.patient.ui.viewmodel.PatientAiViewModel
 import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
-private enum class PatientScreen { Today, Health, Care, Trends, Lifestyle, Medications, Profile, Connections, Account, History, VisitPrep }
+private enum class PatientScreen { Today, Health, Care, Trends, Lifestyle, Medications, Profile, Connections, Account, History, VisitPrep, Ai }
 
 @Composable
 fun DashboardScreen(
     user: UserDto,
     patientViewModel: PatientViewModel,
     authViewModel: AuthViewModel,
+    patientAiViewModel: PatientAiViewModel,
     wearBridge: WearBridge,
     onLogout: () -> Unit,
 ) {
@@ -114,6 +119,7 @@ fun DashboardScreen(
                 patientViewModel.loadCare()
                 patientViewModel.loadTimeline(source = null)
             }
+            PatientScreen.Ai -> patientAiViewModel.load()
             else -> Unit
         }
     }
@@ -126,6 +132,13 @@ fun DashboardScreen(
     }
     Scaffold(
         containerColor = me.glycotwin.patient.ui.theme.WarmOat,
+        floatingActionButton = {
+            if (screen != PatientScreen.Ai) FloatingActionButton(
+                onClick = { screen = PatientScreen.Ai },
+                containerColor = Cobalt,
+                contentColor = GlycoWhite,
+            ) { Icon(Icons.Default.Chat, contentDescription = "Open GlycoTwin AI") }
+        },
         bottomBar = {
             GlycoBottomNavigation(screen) { screen = it }
         },
@@ -162,6 +175,7 @@ fun DashboardScreen(
             PatientScreen.Account -> AccountSecurityScreen(authViewModel, user.email, goBack, onLogout, modifier)
             PatientScreen.History -> PatientTimelineScreen(patientViewModel, goBack, modifier)
             PatientScreen.VisitPrep -> VisitPrepScreen(patientViewModel, goBack, modifier)
+            PatientScreen.Ai -> PatientAiScreen(patientAiViewModel, goBack, modifier)
         }
     }
 }

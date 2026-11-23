@@ -1,18 +1,20 @@
-import { ChevronDown, LayoutDashboard, LogOut, Menu, Settings, Users, X } from 'lucide-react';
+import { ChevronDown, LayoutDashboard, LogOut, Menu, Settings, Sparkles, Users, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import type { PropsWithChildren } from 'react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useBrowserSession, useLogout, useMe } from '../../queries/auth.queries';
 import { normalizeApiError, refreshBrowserSession } from '../../services/api';
 import { useUiStore } from '../../stores/ui.store';
 import { StateMessage } from '../feedback/state-message';
 import { Button } from '../ui/button';
+import { getMediaUrl } from '../../services/media.api';
 import styles from './app-shell.module.css';
 
 const navItems = [
   { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
   { href: '/patients', label: 'Patients', icon: Users },
+  { href: '/ai', label: 'AI workspace', icon: Sparkles },
   { href: '/settings', label: 'Profile & settings', icon: Settings },
 ];
 
@@ -23,11 +25,17 @@ export function AppShell({ children }: PropsWithChildren) {
   const setSidebarOpen = useUiStore((state) => state.setSidebarOpen);
   const logout = useLogout();
   const me = useMe();
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (session === 'signedOut') void router.replace('/auth/login');
     else if (me.data?.role === 'patient') void router.replace('/#patients');
   }, [session, me.data?.role, router]);
+  useEffect(() => {
+    const assetId = me.data?.doctorProfile?.profilePhotoAssetId;
+    if (!assetId) { setPhotoUrl(null); return; }
+    void getMediaUrl(assetId).then(setPhotoUrl).catch(() => setPhotoUrl(null));
+  }, [me.data?.doctorProfile?.profilePhotoAssetId]);
 
   if (session === 'unavailable') {
     return <div className={styles.authState}><StateMessage kind="error">
@@ -65,7 +73,7 @@ export function AppShell({ children }: PropsWithChildren) {
       </div>
     </aside>
     <main className={styles.main}>
-      <header className={styles.topbar}><div><span className={styles.eyebrow}>Doctor workspace</span><h1>{displayName}</h1></div><Link className={styles.profile} href="/settings" aria-label="Open profile and settings"><span className={styles.avatar}>{displayName.slice(0, 1).toUpperCase()}</span><span className={styles.profileText}><strong>{displayName}</strong><small>Doctor account</small></span><ChevronDown size={16} aria-hidden="true" /></Link></header>
+      <header className={styles.topbar}><div><span className={styles.eyebrow}>Doctor workspace</span><h1>{displayName}</h1></div><Link className={styles.profile} href="/settings" aria-label="Open profile and settings"><span className={styles.avatar}>{photoUrl ? <img src={photoUrl} alt="" /> : displayName.slice(0, 1).toUpperCase()}</span><span className={styles.profileText}><strong>{displayName}</strong><small>Doctor account</small></span><ChevronDown size={16} aria-hidden="true" /></Link></header>
       <div className={styles.content}>{children}</div>
     </main>
   </div>;

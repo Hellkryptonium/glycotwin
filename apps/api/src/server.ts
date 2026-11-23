@@ -8,6 +8,8 @@ const server = app.listen(environment.PORT, environment.HOST, () => {
   console.log(`GlycoTwin API listening on ${environment.HOST}:${environment.PORT}`);
 });
 
+app.locals.aiLiveGateway?.attach(server);
+
 async function shutdown(signal: string): Promise<void> {
   console.log(`Received ${signal}; shutting down.`);
   server.close(async () => {

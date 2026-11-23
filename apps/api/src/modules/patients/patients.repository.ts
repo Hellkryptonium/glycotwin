@@ -19,6 +19,7 @@ export interface PatientProfileRepository {
   findByUserId(userId: string): Promise<typeof patientProfiles.$inferSelect | null>;
   findForDoctor(patientId: string, doctorId: string): Promise<typeof patientProfiles.$inferSelect | null>;
   updateProfile(userId: string, input: PatientProfileUpdate): Promise<typeof patientProfiles.$inferSelect | null>;
+  updateProfilePhoto(userId: string, assetId: string | null): Promise<typeof patientProfiles.$inferSelect | null>;
 }
 
 export function createPatientsRepository(database: Database): PatientProfileRepository {
@@ -55,6 +56,11 @@ export function createPatientsRepository(database: Database): PatientProfileRepo
         .set({ ...input, updatedAt: new Date() })
         .where(eq(patientProfiles.userId, userId))
         .returning();
+      return rows[0] ?? null;
+    },
+    async updateProfilePhoto(userId: string, assetId: string | null) {
+      const rows = await database.update(patientProfiles).set({ profilePhotoAssetId: assetId, updatedAt: new Date() })
+        .where(eq(patientProfiles.userId, userId)).returning();
       return rows[0] ?? null;
     },
   };

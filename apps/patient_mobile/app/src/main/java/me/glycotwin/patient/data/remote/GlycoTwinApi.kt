@@ -38,6 +38,7 @@ data class PatientProfileDto(
     val gender: String?,
     val diabetesType: String?,
     val treatmentContext: String? = null,
+    val profilePhotoAssetId: String? = null,
 )
 data class InvitationDto(
     val id: String,
@@ -210,6 +211,29 @@ interface GlycoTwinApi {
         @retrofit2.http.Path("id") id: String,
         @retrofit2.http.Header("Authorization") authorization: String,
     ): Response<Unit>
+
+    @POST("patient/ai/conversations")
+    suspend fun createAiConversation(@Header("Authorization") authorization: String): Response<ApiResponse<PatientAiConversationDto>>
+
+    @GET("patient/ai/conversations")
+    suspend fun aiConversations(@Header("Authorization") authorization: String): Response<ApiResponse<List<PatientAiConversationDto>>>
+
+    @GET("patient/ai/conversations/{id}")
+    suspend fun aiConversation(@Path("id") id: String, @Header("Authorization") authorization: String): Response<ApiResponse<PatientAiConversationDetailDto>>
+
+    @POST("patient/ai/conversations/{id}/messages")
+    suspend fun sendAiMessage(
+        @Path("id") id: String,
+        @Body body: PatientAiMessageInput,
+        @Header("Authorization") authorization: String,
+    ): Response<ApiResponse<PatientAiSendResultDto>>
+
+    @POST("media/uploads")
+    suspend fun createMediaUpload(@Body body: MediaUploadInput, @Header("Authorization") authorization: String): Response<ApiResponse<MediaUploadDto>>
+    @POST("media/assets/{id}/complete")
+    suspend fun completeMediaUpload(@Path("id") id: String, @Header("Authorization") authorization: String): Response<ApiResponse<MediaAssetDto>>
+    @POST("media/assets/{id}/attach-profile-photo")
+    suspend fun attachProfilePhoto(@Path("id") id: String, @Header("Authorization") authorization: String): Response<ApiResponse<MediaAssetDto>>
 }
 
 data class PatientProfileResponse(val email: String, val profile: PatientProfileDto)
@@ -226,6 +250,23 @@ data class PatientTimelineItem(
     val deviceOrigin: String?,
 )
 data class TimelineGlucose(val value: String, val unit: String)
+data class PatientAiConversationDto(val id: String, val title: String, val createdAt: String, val updatedAt: String)
+data class PatientAiMessageDto(
+    val id: String,
+    val conversationId: String,
+    val role: String,
+    val content: String,
+    val reviewKind: String? = null,
+    val imageName: String? = null,
+    val createdAt: String,
+)
+data class PatientAiConversationDetailDto(val conversation: PatientAiConversationDto, val messages: List<PatientAiMessageDto>)
+data class PatientAiImageInput(val mimeType: String, val base64: String, val name: String? = null)
+data class PatientAiMessageInput(val message: String, val reviewKind: String? = null, val image: PatientAiImageInput? = null)
+data class PatientAiSendResultDto(val patientMessage: PatientAiMessageDto, val assistantMessage: PatientAiMessageDto)
+data class MediaUploadInput(val purpose: String, val contentType: String, val sizeBytes: Int, val fileName: String? = null)
+data class MediaAssetDto(val id: String, val status: String, val contentType: String, val sizeBytes: Int)
+data class MediaUploadDto(val asset: MediaAssetDto, val uploadUrl: String)
 data class PatientCareDto(val connections: List<CareConnectionDto>, val items: List<CareItemDto>, val briefs: List<VisitBriefDto>)
 data class CareConnectionDto(
     val id: String,

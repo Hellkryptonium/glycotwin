@@ -20,6 +20,7 @@ export interface DoctorProfile {
   hospitalOrClinic: string | null;
   yearsOfExperience: number | null;
   verificationStatus: 'pending' | 'verified' | 'rejected';
+  profilePhotoAssetId?: string | null;
 }
 
 export interface PatientProfile {
@@ -94,6 +95,32 @@ export interface ApiErrorShape {
   message: string;
   requestId?: string;
   status?: number;
+}
+
+export type AiConversationMode = 'GENERAL' | 'PATIENT';
+export type AiMessageRole = 'DOCTOR' | 'ASSISTANT';
+
+export interface AiConversation {
+  id: string;
+  doctorUserId: string;
+  patientProfileId: string | null;
+  mode: AiConversationMode;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AiMessage {
+  id: string;
+  conversationId: string;
+  role: AiMessageRole;
+  content: string;
+  createdAt: string;
+}
+
+export interface AiConversationDetail {
+  conversation: AiConversation;
+  messages: AiMessage[];
 }
 
 export type GlucoseSource = 'MANUAL' | 'CGM' | 'HEALTH_CONNECT' | 'REPLAY';
