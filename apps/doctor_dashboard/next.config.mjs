@@ -10,7 +10,11 @@ const nextConfig = {
       throw new Error('API_PROXY_TARGET must be an HTTPS API base URL without credentials, query parameters, or a fragment.');
     }
     if (upstream.hostname === 'localhost') upstream.hostname = '127.0.0.1';
-    return [{ source: '/backend/:path*', destination: `${upstream.href.replace(/\/$/, '')}/:path*` }];
+    const aiUpstream = new URL('/api/ai', upstream);
+    return [
+      { source: '/backend/ai/:path*', destination: `${aiUpstream.href.replace(/\/$/, '')}/:path*` },
+      { source: '/backend/:path*', destination: `${upstream.href.replace(/\/$/, '')}/:path*` },
+    ];
   },
 };
 

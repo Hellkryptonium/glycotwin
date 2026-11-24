@@ -27,6 +27,7 @@ export interface DoctorProfileSummary {
   hospitalOrClinic: string | null;
   yearsOfExperience: number | null;
   verificationStatus: 'pending' | 'verified' | 'rejected';
+  profilePhotoAssetId?: string | null;
 }
 
 export interface PatientProfileSummary {
@@ -36,6 +37,7 @@ export interface PatientProfileSummary {
   gender: string | null;
   diabetesType: string | null;
   treatmentContext?: 'INSULIN' | 'NON_INSULIN' | 'LIFESTYLE' | 'UNKNOWN' | null;
+  profilePhotoAssetId?: string | null;
 }
 
 export interface AccessTokenClaims {

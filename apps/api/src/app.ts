@@ -17,6 +17,8 @@ import { createDoctorProfileRouter } from './modules/doctors/doctor-profile.rout
 import { createGlucoseModule } from './modules/health-records/glucose.module.js';
 import { createLifestyleModule } from './modules/lifestyle/lifestyle.module.js';
 import { createMedicationModule } from './modules/medications/medication.module.js';
+import { createAiModule } from './modules/ai/ai.module.js';
+import { createMediaModule } from './modules/media/media.module.js';
 import { createRoutes } from './routes/index.js';
 
 export interface AppOptions {
@@ -28,6 +30,9 @@ export interface AppOptions {
   patientProfileRouter?: Router | null;
   glucoseRouter?: Router | null;
   analyticsRouter?: Router | null;
+  aiRouter?: Router | null;
+  patientAiRouter?: Router | null;
+  mediaRouter?: Router | null;
 }
 
 export function createApp(options: AppOptions = {}) {
@@ -40,6 +45,7 @@ export function createApp(options: AppOptions = {}) {
   const connectionRouter = options.connectionRouter === null
     ? undefined
     : options.connectionRouter ?? (authModule ? createConnectionModule(getDatabase(), authModule.service).router : undefined);
+  const mediaModule = authModule ? createMediaModule(getDatabase(), authModule.service, environment) : undefined;
   const patientProfileRouter = options.patientProfileRouter === null
     ? undefined
     : options.patientProfileRouter ?? (authModule ? createPatientProfileModule(getDatabase(), authModule.service).router
@@ -54,16 +60,30 @@ export function createApp(options: AppOptions = {}) {
     : options.analyticsRouter ?? glucoseModule?.analyticsRouter;
   const lifestyleRouter = authModule ? createLifestyleModule(getDatabase(), authModule.service).router : undefined;
   const medicationRouter = authModule ? createMedicationModule(getDatabase(), authModule.service).router : undefined;
+  const aiModule = options.aiRouter === undefined && authModule
+    ? createAiModule(getDatabase(), authModule.service, environment)
+    : undefined;
+  const aiRouter = options.aiRouter === null
+    ? undefined
+    : options.aiRouter ?? aiModule?.router;
+  const patientAiRouter = options.patientAiRouter === null
+    ? undefined
+    : options.patientAiRouter ?? aiModule?.patientRouter;
+  const mediaRouter = options.mediaRouter === null ? undefined : options.mediaRouter ?? mediaModule?.router;
   const app = express();
+  app.locals.aiLiveGateway = aiModule?.liveGateway;
 
   app.use(helmet());
   app.use(cors({ origin: environment.FRONTEND_ORIGIN }));
-  app.use(express.json({ limit: '1mb' }));
-  app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+  // Patient photo review accepts a compressed image as base64 and enforces a
+  // tighter per-image limit in the AI service. Keep all other JSON payloads
+  // bounded without requiring a client-side Gemini key.
+  app.use(express.json({ limit: '8mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '8mb' }));
   app.use(pinoHttp({ redact: ['req.headers.authorization', 'req.headers.cookie', 'req.headers.referer', 'res.headers["set-cookie"]'] }));
   app.use(requestIdMiddleware);
   app.use(rateLimit({ windowMs: 60_000, limit: 100, standardHeaders: 'draft-8', legacyHeaders: false }));
-  app.use(createRoutes(createHealthService(databaseHealthCheck), authModule?.router, connectionRouter, patientProfileRouter, glucoseRouter, analyticsRouter, lifestyleRouter, medicationRouter));
+  app.use(createRoutes(createHealthService(databaseHealthCheck), authModule?.router, connectionRouter, patientProfileRouter, glucoseRouter, analyticsRouter, lifestyleRouter, medicationRouter, aiRouter, patientAiRouter, mediaRouter));
 
   if (options.additionalRoutes) {
     app.use(options.additionalRoutes);

@@ -479,6 +479,16 @@ class PatientViewModel(
         }
     }
 
+    fun uploadProfilePhoto(bytes: ByteArray) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(profileSaving = true, error = null)
+            repository.uploadProfilePhoto(bytes).onSuccess {
+                _state.value = _state.value.copy(profileSaving = false, confirmation = "Profile photo saved.")
+                loadProfile()
+            }.onFailure { error -> _state.value = _state.value.copy(profileSaving = false, error = error.toUserMessage()) }
+        }
+    }
+
     fun refresh() {
         fetch(refresh = true)
         loadCare()

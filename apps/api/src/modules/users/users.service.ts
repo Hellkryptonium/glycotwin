@@ -52,6 +52,7 @@ export function createUsersService(database: Database, options: { autoApproveDoc
               hospitalOrClinic: profile.hospitalOrClinic,
               yearsOfExperience: profile.yearsOfExperience,
               verificationStatus: profile.verificationStatus,
+              profilePhotoAssetId: profile.profilePhotoAssetId,
             },
           }),
         };
@@ -69,6 +70,7 @@ export function createUsersService(database: Database, options: { autoApproveDoc
               gender: profile.gender,
               diabetesType: profile.diabetesType,
               treatmentContext: profile.treatmentContext,
+              profilePhotoAssetId: profile.profilePhotoAssetId,
             },
           }),
         };

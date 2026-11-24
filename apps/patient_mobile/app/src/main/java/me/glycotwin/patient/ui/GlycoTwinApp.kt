@@ -24,6 +24,7 @@ import me.glycotwin.patient.ui.screens.RestoringSessionScreen
 import me.glycotwin.patient.ui.screens.WelcomeScreen
 import me.glycotwin.patient.ui.viewmodel.AuthViewModel
 import me.glycotwin.patient.ui.viewmodel.PatientViewModel
+import me.glycotwin.patient.ui.viewmodel.PatientAiViewModel
 
 private enum class Destination { Welcome, Register, Login }
 
@@ -49,9 +50,14 @@ fun GlycoTwinApp() {
     val user = authState.user
     if (user != null) {
         val sessionKey = authState.sessionKey
+        val patientRepository = remember(authRepository, user.id) { PatientRepository(ApiClient.api, authRepository, user.id) }
         val patientViewModel: PatientViewModel = viewModel(
             key = "patient/$sessionKey",
-            factory = SimpleFactory { PatientViewModel(PatientRepository(ApiClient.api, authRepository, user.id), user.id) },
+            factory = SimpleFactory { PatientViewModel(patientRepository, user.id) },
+        )
+        val patientAiViewModel: PatientAiViewModel = viewModel(
+            key = "patient-ai/$sessionKey",
+            factory = SimpleFactory { PatientAiViewModel(patientRepository) },
         )
         val patientState by patientViewModel.state.collectAsState()
         val latestReading = patientState.readings.firstOrNull()
@@ -71,7 +77,7 @@ fun GlycoTwinApp() {
         } else {
             DashboardScreen(
                 user = user, patientViewModel = patientViewModel, authViewModel = authViewModel,
-                wearBridge = wearBridge, onLogout = logout,
+                patientAiViewModel = patientAiViewModel, wearBridge = wearBridge, onLogout = logout,
             )
         }
         return

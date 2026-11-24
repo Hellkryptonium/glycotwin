@@ -19,6 +19,7 @@
 .topbar h1 { font-family: Georgia, serif; font-size: clamp(29px, 3.2vw, 48px); font-weight: 400; letter-spacing: -.04em; margin: 3px 0 0; }
 .profile { align-items: center; display: flex; gap: 10px; }
 .avatar { align-items: center; background: var(--blush); border: 2px solid var(--ink); border-radius: 50%; display: inline-flex; font-family: Georgia, serif; font-size: 19px; height: 40px; justify-content: center; width: 40px; }
+.avatar img { border-radius: 50%; height: 100%; object-fit: cover; width: 100%; }
 .profileText { display: grid; line-height: 1.2; }
 .profileText small { color: var(--muted-ink); font-size: 12px; margin-top: 3px; }
 .content { margin: 0 auto; max-width: 1440px; padding: 0 5vw 60px; }

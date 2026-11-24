@@ -1,6 +1,8 @@
 package me.glycotwin.patient.ui.screens
 
 import android.app.DatePickerDialog
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
@@ -58,6 +60,9 @@ fun ProfileScreen(
     var treatmentContext by rememberSaveable { mutableStateOf("") }
     var validationError by rememberSaveable { mutableStateOf<String?>(null) }
     var editing by rememberSaveable { mutableStateOf(required) }
+    val photoPicker = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        if (uri != null) runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()?.let(viewModel::uploadProfilePhoto)
+    }
     LaunchedEffect(state.profile?.profile?.id) {
         state.profile?.profile?.let { profile ->
             fullName = profile.fullName.orEmpty()
@@ -89,6 +94,7 @@ fun ProfileScreen(
             if (!editing) {
                 SectionCard("Personal details") {
                     ProfileAvatar(fullName)
+                    TactileOutlinedButton(if (state.profileSaving) "Uploading photo…" else "Choose profile photo", { photoPicker.launch("image/*") }, Modifier.fillMaxWidth(), enabled = !state.profileSaving)
                     Text(fullName, style = MaterialTheme.typography.titleLarge)
                     Text(state.profile?.email ?: user?.email.orEmpty(), color = MutedInk)
                     dateOfBirth?.let { Text("Born $it", color = MutedInk) }
